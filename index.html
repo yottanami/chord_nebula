@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Chord Nebula</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div id="setupScreen" class="active">
+  <div id="setupContainer">
+    <h1>Chord Nebula</h1>
+    <p>Learn and practice piano chords and common chord progressions in both major and minor keys!</p>
+    <p>Select your MIDI keyboard and key:</p>
+    <select id="midiSelect"></select><br/>
+    <select id="keySelect">
+      <option value="C">C</option>
+      <option value="G">G</option>
+      <option value="D">D</option>
+      <option value="A">A</option>
+      <option value="E">E</option>
+      <option value="B">B</option>
+      <option value="F#">F#</option>
+      <option value="C#">C#</option>
+      <option value="F">F</option>
+      <option value="Bb">Bb</option>
+      <option value="Eb">Eb</option>
+      <option value="Ab">Ab</option>
+      <option value="Db">Db</option>
+      <option value="Gb">Gb</option>
+    </select><br/>
+    <label>
+      <input type="radio" name="mode" value="major" checked> Major
+    </label>
+    <label>
+      <input type="radio" name="mode" value="minor"> Minor
+    </label><br/>
+    <label>
+      <input type="checkbox" id="showNotesCheckbox" checked/>
+      Show chord notes?
+    </label><br/>
+    <button id="startButton">Start Game</button>
+  </div>
+</div>
+
+<div id="gameScreen">
+  <h2>Chord Nebula</h2>
+  <div id="scoreDisplay">Score: 0</div>
+  <div id="livesDisplay">Lives: 3</div>
+  <div id="gameArea"></div>
+</div>
+
+<div id="endScreen">
+  <h2>Game Over</h2>
+  <div id="finalScore"></div>
+  <button id="restartButton">Restart</button>
+</div>
+
+<script src="dist/app.js"></script>
+</body>
+</html>

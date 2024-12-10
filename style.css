@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+body {
+  margin: 0;
+  background: #000 url('images/background.jpg') no-repeat center center fixed;
+  background-size: cover;
+  font-family: 'Press Start 2P', cursive;
+  color: #fff;
+}
+
+#setupScreen, #gameScreen, #endScreen {
+  display: none;
+  text-align: center;
+  padding: 20px;
+}
+
+#setupScreen.active, #gameScreen.active, #endScreen.active {
+  display: block;
+}
+
+#setupContainer {
+  background: rgba(0,0,0,0.7);
+  border: 3px solid #fff;
+  border-radius: 10px;
+  padding: 30px;
+  display: inline-block;
+  text-align: center;
+  margin-top: 100px;
+}
+
+h1 {
+  font-size: 1.5em;
+  margin-bottom: 20px;
+}
+
+#midiSelect, #keySelect {
+  padding: 10px;
+  font-size: 16px;
+  margin: 10px;
+  font-family: 'Press Start 2P', cursive;
+  background: #222;
+  color: #fff;
+  border: 2px solid #fff;
+}
+
+#showNotesCheckbox {
+  transform: scale(1.5);
+  margin-right: 10px;
+}
+
+#startButton, #restartButton {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 20px auto;
+  display: inline-block;
+  background: #444;
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 5px;
+  text-decoration: none;
+}
+
+#gameArea {
+  position: relative;
+  width: 100vw;
+  height: 80vh;
+  overflow: hidden;
+  background: url('images/gameArea-bg.jpg') no-repeat center center;
+  background-size: cover;
+  margin: 0 auto;
+  box-sizing: border-box;
+  border-top: 3px solid #fff;
+  border-bottom: 3px solid #fff;
+}
+
+.chordCircle {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  background: radial-gradient(circle, #ffd700, #ff8c00);
+  border-radius: 50%;
+  border: 2px solid #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  text-align: center;
+  padding: 5px;
+  box-sizing: border-box;
+  color: #000;
+  font-family: 'Press Start 2P', cursive;
+}
+
+#scoreDisplay, #livesDisplay {
+  font-size: 20px;
+  margin: 10px;
+  display: inline-block;
+  padding: 5px 10px;
+  background: rgba(0,0,0,0.5);
+  border: 2px solid #fff;
+  border-radius: 5px;
+}
+
+#endScreen h2 {
+  margin-bottom: 20px;
+  font-size: 1.5em;
+}
+
+#finalScore {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
