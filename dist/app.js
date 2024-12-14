@@ -12,6 +12,7 @@ let chosenMode = "major";
 let progressionIndex = 0;
 let chordIndex = 0;
 let showNotes = true;
+let showFunctions = false;
 let lastSpawn = 0;
 let activeOscillators = {};
 const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -232,7 +233,7 @@ function getChordFullName(key, degree, originalChord, finalChord, inversion, mod
     const qmap = mode === "major" ? degreeQualityMapMajor : degreeQualityMapMinor;
     const quality = qmap[degree];
     const root = originalChord[0];
-    let chordName = `${root} ${quality}`;
+    let chordName = quality == "maj" ? root : `${root} ${quality}`;
     if (inversion > 0) {
         chordName = chordName.split(' ')[0];
         chordName += `/${finalChord[0]}`;
@@ -293,7 +294,11 @@ function generateChordCircle() {
     let chordFullName = getChordFullName(chosenKey, chordDegree, originalChord, invertedChord, ci.inversion, chosenMode);
     let element = document.createElement('div');
     element.className = 'chordCircle';
-    let htmlContent = `<div>${chordDegree}</div><div>${chordFullName}</div>`;
+    let htmlContent = "";
+    if (showFunctions) {
+        htmlContent += `<div>${chordDegree}</div>`;
+    }
+    htmlContent += `<div>${chordFullName}</div>`;
     if (showNotes) {
         htmlContent += `<div>${invertedChord.join("-")}</div>`;
     }
@@ -358,8 +363,11 @@ function startGame() {
     const select = document.getElementById('midiSelect');
     const keySel = document.getElementById('keySelect');
     const notesCheck = document.getElementById('showNotesCheckbox');
+    const functionsCheck = document.getElementById('showFunctionsCheckbox');
     if (notesCheck)
         showNotes = notesCheck.checked;
+    if (functionsCheck)
+        showFunctions = functionsCheck.checked;
     if (keySel)
         chosenKey = keySel.value;
     const modeInputs = document.querySelectorAll('input[name="mode"]');

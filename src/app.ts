@@ -19,6 +19,7 @@ let chosenMode: "major" | "minor" = "major";
 let progressionIndex: number = 0;
 let chordIndex: number = 0;
 let showNotes: boolean = true;
+let showFunctions: boolean = false;
 let lastSpawn: number = 0;
 let activeOscillators: { [key: number]: { osc: OscillatorNode; gain: GainNode } } = {};
 const noteNames: string[] = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
@@ -226,7 +227,8 @@ function getChordFullName(key:string,degree:string,originalChord:string[],finalC
   const qmap=mode==="major"?degreeQualityMapMajor:degreeQualityMapMinor;
   const quality=qmap[degree];
   const root=originalChord[0];
-  let chordName=`${root} ${quality}`;
+
+  let chordName = quality=="maj" ? root : `${root} ${quality}`;
   if(inversion>0){
     chordName=chordName.split(' ')[0];
     chordName+=`/${finalChord[0]}`;
@@ -283,7 +285,11 @@ function generateChordCircle():void {
   let chordFullName=getChordFullName(chosenKey,chordDegree,originalChord,invertedChord,ci.inversion,chosenMode);
   let element=document.createElement('div');
   element.className='chordCircle';
-  let htmlContent=`<div>${chordDegree}</div><div>${chordFullName}</div>`;
+  let htmlContent = "";
+  if(showFunctions){
+      htmlContent+=`<div>${chordDegree}</div>`;
+  }
+  htmlContent+=`<div>${chordFullName}</div>`;
   if(showNotes){
     htmlContent+=`<div>${invertedChord.join("-")}</div>`;
   }
@@ -341,7 +347,9 @@ function startGame():void {
   const select=document.getElementById('midiSelect')as HTMLSelectElement|null;
   const keySel=document.getElementById('keySelect')as HTMLSelectElement|null;
   const notesCheck=document.getElementById('showNotesCheckbox')as HTMLInputElement|null;
+  const functionsCheck=document.getElementById('showFunctionsCheckbox')as HTMLInputElement|null;
   if(notesCheck)showNotes=notesCheck.checked;
+  if(functionsCheck)showFunctions=functionsCheck.checked;
   if(keySel)chosenKey=keySel.value;
   const modeInputs=document.querySelectorAll('input[name="mode"]')as NodeListOf<HTMLInputElement>;
   modeInputs.forEach(m=>{if(m.checked) chosenMode=m.value as "major"|"minor";});

@@ -35,7 +35,7 @@ h1 {
 
 #midiSelect, #keySelect {
   padding: 10px;
-  font-size: 16px;
+  font-size: 12px;
   margin: 10px;
   font-family: 'Press Start 2P', cursive;
   background: #222;
@@ -43,8 +43,9 @@ h1 {
   border: 2px solid #fff;
 }
 
-#showNotesCheckbox {
+#showNotesCheckbox, #showFunctionsCheckbox {
   transform: scale(1.5);
+  margin-top: 20px;  
   margin-right: 10px;
 }
 
@@ -63,15 +64,13 @@ h1 {
 
 #gameArea {
   position: relative;
-  width: 100vw;
+  min-width: 70vw;
   height: 80vh;
   overflow: hidden;
   background: url('images/gameArea-bg.jpg') no-repeat center center;
   background-size: cover;
   margin: 0 auto;
   box-sizing: border-box;
-  border-top: 3px solid #fff;
-  border-bottom: 3px solid #fff;
 }
 
 .chordCircle {
@@ -85,12 +84,13 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 14px;
   text-align: center;
   padding: 5px;
   box-sizing: border-box;
   color: #000;
   font-family: 'Press Start 2P', cursive;
+  line-height: 1.8;
 }
 
 #scoreDisplay, #livesDisplay {
