@@ -45,8 +45,14 @@ h1 {
 
 #showNotesCheckbox, #showFunctionsCheckbox {
   transform: scale(1.5);
-  margin-top: 20px;  
+  margin-top: 17px;
+  margin-bottom: 15px;
   margin-right: 10px;
+}
+
+.modeRadio {
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 #startButton, #restartButton {
