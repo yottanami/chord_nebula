@@ -2,6 +2,12 @@
 
 **Chord Nebula** is a web-based application designed to help you learn and practice both major and minor piano chords, common progressions, harmony rules, and inversions using a MIDI keyboard. Whether you're a beginner looking to build a strong foundation or an intermediate player aiming to refine your skills, Chord Nebula offers an interactive and engaging platform to enhance your musical journey.
 
+
+## Online Demo
+
+https://chords.yottanami.com
+
+
 ## Features
 
 - **Interactive Learning:** Practice major and minor chords with real-time feedback using your MIDI keyboard.
