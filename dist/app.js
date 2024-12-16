@@ -360,20 +360,27 @@ function stopAllSounds() {
     activeOscillators = {};
 }
 function startGame() {
-    const select = document.getElementById('midiSelect');
+    const midi = document.getElementById('midiSelect');
     const keySel = document.getElementById('keySelect');
     const notesCheck = document.getElementById('showNotesCheckbox');
     const functionsCheck = document.getElementById('showFunctionsCheckbox');
+    const modeInputs = document.querySelectorAll('input[name="mode"]');
+    const setupScreen = document.getElementById('setupScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const endScreen = document.getElementById('endScreen');
     if (notesCheck)
         showNotes = notesCheck.checked;
     if (functionsCheck)
         showFunctions = functionsCheck.checked;
     if (keySel)
         chosenKey = keySel.value;
-    const modeInputs = document.querySelectorAll('input[name="mode"]');
+    if (!isValidMidiInput(midi === null || midi === void 0 ? void 0 : midi.options)) {
+        alert("Please select a valid MIDI input device");
+        return;
+    }
     modeInputs.forEach(m => { if (m.checked)
         chosenMode = m.value; });
-    const selectedId = select ? select.value : "";
+    const selectedId = midi ? midi.value : "";
     let inputs = [];
     midiAccess.inputs.forEach((input) => { inputs.push(input); });
     midiInput = inputs.find((i) => i.id === selectedId);
@@ -383,9 +390,6 @@ function startGame() {
     lives = 3;
     updateScore();
     updateLives();
-    const setupScreen = document.getElementById('setupScreen');
-    const gameScreen = document.getElementById('gameScreen');
-    const endScreen = document.getElementById('endScreen');
     if (setupScreen)
         setupScreen.classList.remove('active');
     if (gameScreen)
@@ -437,8 +441,42 @@ if (restartButton)
             endScreen.classList.remove('active');
     });
 if (navigator.requestMIDIAccess) {
-    navigator.requestMIDIAccess().then((access) => {
+    navigator.requestMIDIAccess()
+        .then((access) => {
         midiAccess = access;
         populateMIDIInputs();
+    })
+        .catch((err) => {
+        console.error("Failed to access MIDI devices:", err);
+        alert("MIDI access was denied. Please allow MIDI access to use Chord Nebula.");
     });
+}
+function isValidMidiInput(midiInputs) {
+    if (!midiInputs || midiInputs.length === 0) {
+        return false;
+    }
+    if (midiInputs.length === 1 && midiInputs[0].innerText === "Midi Through Port-0") {
+        return false;
+    }
+    return true;
+}
+function showPopup() {
+    if (popupOverlay) {
+        popupOverlay.classList.add('active');
+    }
+}
+function hidePopup() {
+    if (popupOverlay) {
+        popupOverlay.classList.remove('active');
+    }
+}
+if (closePopupButton) {
+    closePopupButton.addEventListener('click', hidePopup);
+}
+window.addEventListener('load', showPopup);
+function displayErrorMessage(message) {
+    const errorMessageDiv = document.getElementById("error-message");
+    if (errorMessageDiv) {
+        errorMessageDiv.textContent = message;
+    }
 }
