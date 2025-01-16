@@ -216,19 +216,18 @@ function matchesLevel4(chordNotes:string[]):boolean {
 }
 
 function matchesLevel5(chordNotes:string[]):boolean {
-    if(chordNotes.length!== noteOnStack.length) return false;
-
-    let playedAsc= [...noteOnStack].sort((a,b)=> a.midiNumber- b.midiNumber);
+  if(chordNotes.length!== noteOnStack.length) return false;
+  let playedAsc= [...noteOnStack].sort((a,b)=> a.midiNumber- b.midiNumber);
   for(let i=0; i<chordNotes.length; i++){
     let cNote= toSharpName(chordNotes[i]);
     let pNote= toSharpName(midiNoteToName(playedAsc[i].midiNumber));
     if(cNote!== pNote) return false;
   }
-
   if(playedAsc.length>=2){
     let bassMidi= playedAsc[0].midiNumber;
     let secondMidi= playedAsc[1].midiNumber;
-    if(bassMidi > secondMidi) return false;
+    if(bassMidi> secondMidi) return false;
+//    if(secondMidi- bassMidi<12) return false;
   }
   return true;
 }
@@ -441,9 +440,13 @@ function generateChordCircle():void {
     htmlContent+= `<div>${chordDegree}</div>`;
   }
   htmlContent+= `<div>${chordLabel}</div>`;
+
+  if(score>5) showNotes= false;
+
   if(showNotes){
     htmlContent+= `<div>${displayChord.join("-")}</div>`;
   }
+
   element.innerHTML= htmlContent;
 
   let gameArea= document.getElementById('gameArea')!;

@@ -208,6 +208,7 @@ function matchesLevel5(chordNotes) {
         let secondMidi = playedAsc[1].midiNumber;
         if (bassMidi > secondMidi)
             return false;
+        //    if(secondMidi- bassMidi<12) return false;
     }
     return true;
 }
@@ -410,6 +411,8 @@ function generateChordCircle() {
         htmlContent += `<div>${chordDegree}</div>`;
     }
     htmlContent += `<div>${chordLabel}</div>`;
+    if (score > 5)
+        showNotes = false;
     if (showNotes) {
         htmlContent += `<div>${displayChord.join("-")}</div>`;
     }
