@@ -15,7 +15,11 @@ let showNotes = true;
 let showFunctions = false;
 let lastSpawn = 0;
 let activeOscillators = {};
-const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+let selectedLevel = 4;
+let circleSpawnCount = 0;
+const noteNames = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+];
 const enhMapToSharp = {
     "Bb": "A#", "Eb": "D#", "Ab": "G#", "Db": "C#", "Gb": "F#", "Cb": "B", "Fb": "E"
 };
@@ -51,8 +55,12 @@ const minorScales = {
     "Bb": ["Bb", "C", "Db", "Eb", "F", "Gb", "Ab"],
     "Eb": ["Eb", "F", "Gb", "Ab", "Bb", "Cb", "Db"]
 };
-const degreeMapMajor = { "I": 0, "ii": 1, "iii": 2, "IV": 3, "V": 4, "vi": 5, "vii": 6 };
-const degreeMapMinor = { "i": 0, "ii°": 1, "III": 2, "iv": 3, "v": 4, "VI": 5, "VII": 6 };
+const degreeMapMajor = {
+    "I": 0, "ii": 1, "iii": 2, "IV": 3, "V": 4, "vi": 5, "vii": 6
+};
+const degreeMapMinor = {
+    "i": 0, "ii°": 1, "III": 2, "iv": 3, "v": 4, "VI": 5, "VII": 6
+};
 const degreeQualityMapMajor = {
     "I": "maj", "ii": "min", "iii": "min", "IV": "maj", "V": "maj", "vi": "min", "vii": "dim"
 };
@@ -70,9 +78,8 @@ const minorProgressions = [
     ["ii°", "v", "i", "i"]
 ];
 function ensureAudioContext() {
-    if (!audioContext) {
+    if (!audioContext)
         audioContext = new AudioContext();
-    }
 }
 function midiNoteToName(noteNumber) {
     return noteNames[noteNumber % 12];
@@ -85,14 +92,8 @@ function toSharpName(n) {
         return enhMapToSharp[n];
     return n;
 }
-function normalizePlayedNote(n) {
-    // played notes come in sharps mostly from midiNoteToName, but if needed we can ensure they are in sharp form
-    // midiNoteToName never returns flats, so this is fine
-    return n;
-}
 function normalizeChordNote(n) {
-    n = toSharpName(n);
-    return n;
+    return toSharpName(n);
 }
 function playNoteSound(noteNumber, velocity) {
     ensureAudioContext();
@@ -114,26 +115,109 @@ function stopNoteSound(noteNumber) {
         delete activeOscillators[noteNumber];
     }
 }
+function onMIDIMessage(event) {
+    let arr = event.data;
+    if (!arr || arr.length < 3)
+        return;
+    const status = arr[0];
+    const midiNumber = arr[1];
+    const velocity = arr[2];
+    if (status >= 0x90 && status <= 0x9f && velocity > 0) {
+        let noteName = midiNoteToName(midiNumber);
+        noteOnStack.push({ noteName, midiNumber });
+        playNoteSound(midiNumber, velocity);
+        checkChords();
+    }
+    else if ((status >= 0x80 && status <= 0x8f) || (status >= 0x90 && status <= 0x9f && velocity === 0)) {
+        let idx = noteOnStack.findIndex(obj => obj.midiNumber === midiNumber);
+        if (idx > -1)
+            noteOnStack.splice(idx, 1);
+        stopNoteSound(midiNumber);
+    }
+}
 function checkChords() {
     for (let i = circles.length - 1; i >= 0; i--) {
         let c = circles[i];
         if (!c.destroyed) {
-            if (chordMatchesPlayedNotes(c.chordNotes, noteOnStack)) {
-                playChordSound(c.chordNotes);
-                c.destroyed = true;
-                score++;
-                updateScore();
+            if (selectedLevel === 4) {
+                if (matchesLevel4(c.noteOrChordNotes)) {
+                    playChordSound(c.noteOrChordNotes);
+                    c.destroyed = true;
+                    score++;
+                    updateScore();
+                }
+            }
+            else if (selectedLevel === 5) {
+                if (matchesLevel5(c.noteOrChordNotes)) {
+                    playChordSound(c.noteOrChordNotes);
+                    c.destroyed = true;
+                    score++;
+                    updateScore();
+                }
+            }
+            else {
+                if (matchesLevel1to3(c.noteOrChordNotes)) {
+                    playChordSound(c.noteOrChordNotes);
+                    c.destroyed = true;
+                    score++;
+                    updateScore();
+                }
             }
         }
     }
 }
+function matchesLevel1to3(chordNotes) {
+    if (chordNotes.length !== noteOnStack.length)
+        return false;
+    let chordSet = new Set(chordNotes.map(normalizeChordNote));
+    let playedSet = new Set(noteOnStack.map(o => toSharpName(midiNoteToName(o.midiNumber))));
+    if (chordSet.size !== playedSet.size)
+        return false;
+    for (let note of chordSet) {
+        if (!playedSet.has(note))
+            return false;
+    }
+    return true;
+}
+function matchesLevel4(chordNotes) {
+    if (chordNotes.length !== noteOnStack.length)
+        return false;
+    let chordAsc = chordNotes
+        .map(normalizeChordNote)
+        .sort((a, b) => noteNames.indexOf(a) - noteNames.indexOf(b));
+    let playedAsc = [...noteOnStack].sort((a, b) => a.midiNumber - b.midiNumber);
+    for (let i = 0; i < chordAsc.length; i++) {
+        let playedName = toSharpName(midiNoteToName(playedAsc[i].midiNumber));
+        if (chordAsc[i] !== playedName)
+            return false;
+    }
+    return true;
+}
+function matchesLevel5(chordNotes) {
+    if (chordNotes.length !== noteOnStack.length)
+        return false;
+    let playedAsc = [...noteOnStack].sort((a, b) => a.midiNumber - b.midiNumber);
+    for (let i = 0; i < chordNotes.length; i++) {
+        let cNote = toSharpName(chordNotes[i]);
+        let pNote = toSharpName(midiNoteToName(playedAsc[i].midiNumber));
+        if (cNote !== pNote)
+            return false;
+    }
+    if (playedAsc.length >= 2) {
+        let bassMidi = playedAsc[0].midiNumber;
+        let secondMidi = playedAsc[1].midiNumber;
+        if (bassMidi > secondMidi)
+            return false;
+    }
+    return true;
+}
 function updateScore() {
-    const s = document.getElementById('scoreDisplay');
+    let s = document.getElementById('scoreDisplay');
     if (s)
         s.innerText = "Score: " + score;
 }
 function updateLives() {
-    const l = document.getElementById('livesDisplay');
+    let l = document.getElementById('livesDisplay');
     if (l)
         l.innerText = "Lives: " + lives;
 }
@@ -147,8 +231,8 @@ function playChordSound(chord) {
     ensureAudioContext();
     let ctx = audioContext;
     let startTime = ctx.currentTime;
-    for (const noteNameStr of chord) {
-        let freq = noteNameToFreq(noteNameStr);
+    for (const n of chord) {
+        let freq = noteNameToFreq(n);
         let osc = ctx.createOscillator();
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, startTime);
@@ -156,87 +240,43 @@ function playChordSound(chord) {
         gainNode.gain.setValueAtTime(0.3, startTime);
         osc.connect(gainNode).connect(ctx.destination);
         osc.start();
-        setTimeout(() => { osc.stop(); }, 300);
+        setTimeout(() => osc.stop(), 300);
     }
 }
 function noteNameToFreq(name) {
     ensureAudioContext();
-    name = toSharpName(name);
-    let baseFreq = 440;
+    let sharps = toSharpName(name);
     let baseIndex = noteNames.indexOf("A");
-    let noteIndex = noteNames.indexOf(name);
+    let noteIndex = noteNames.indexOf(sharps);
     if (noteIndex < 0)
-        noteIndex = noteNames.indexOf(name.replace('b', '#'));
+        noteIndex = noteNames.indexOf(sharps.replace('b', '#'));
     if (noteIndex < 0)
         noteIndex = 0;
     let semitoneDiff = noteIndex - baseIndex;
-    return baseFreq * Math.pow(2, semitoneDiff / 12);
-}
-function onMIDIMessage(event) {
-    const data = event.data;
-    if (!data || data.length < 3)
-        return;
-    const arr = data;
-    const [status, note, velocity] = arr;
-    if (status >= 0x90 && status <= 0x9f && velocity > 0) {
-        let noteNameStr = midiNoteToName(note);
-        noteNameStr = normalizePlayedNote(noteNameStr);
-        noteOnStack.push(noteNameStr);
-        playNoteSound(note, velocity);
-        checkChords();
-    }
-    if ((status >= 0x80 && status <= 0x8f) || (status >= 0x90 && status <= 0x9f && velocity === 0)) {
-        let noteNameStr = midiNoteToName(note);
-        noteNameStr = normalizePlayedNote(noteNameStr);
-        let idx = noteOnStack.indexOf(noteNameStr);
-        if (idx > -1)
-            noteOnStack.splice(idx, 1);
-        stopNoteSound(note);
-    }
-}
-function chordMatchesPlayedNotes(chord, played) {
-    if (chord.length !== played.length)
-        return false;
-    // normalize chord and played notes to sharps so they match
-    let normalizedChord = chord.map(n => normalizeChordNote(n));
-    let normalizedPlayed = played.map(n => toSharpName(n));
-    let chordSet = new Set(normalizedChord);
-    let playedSet = new Set(normalizedPlayed);
-    if (chordSet.size !== playedSet.size)
-        return false;
-    for (let note of chordSet) {
-        if (!playedSet.has(note))
-            return false;
-    }
-    return true;
+    return 440 * Math.pow(2, semitoneDiff / 12);
 }
 function chordDegreesToChordNotes(key, degree, mode) {
-    const scale = mode === "major" ? majorScales[key] : minorScales[key];
-    const degMap = mode === "major" ? degreeMapMajor : degreeMapMinor;
-    const root = scale[degMap[degree]];
-    const third = scale[(degMap[degree] + 2) % 7];
-    const fifth = scale[(degMap[degree] + 4) % 7];
-    return [root, third, fifth];
+    let scale = (mode === "major" ? majorScales[key] : minorScales[key]) || [];
+    let degMap = (mode === "major" ? degreeMapMajor : degreeMapMinor);
+    let idx = degMap[degree];
+    if (idx === undefined)
+        return ["C", "E", "G"];
+    let root = scale[idx];
+    let third = scale[(idx + 2) % 7];
+    let fifth = scale[(idx + 4) % 7];
+    return [root, third, fifth].map(normalizeChordNote);
+}
+function getProgressions() {
+    return (chosenMode === "major" ? majorProgressions : minorProgressions);
 }
 function getNextChordName() {
-    const progressions = chosenMode === "major" ? majorProgressions : minorProgressions;
-    let progression = progressions[progressionIndex];
+    let p = getProgressions();
+    let progression = p[progressionIndex];
     let chordName = progression[chordIndex];
     chordIndex++;
     if (chordIndex >= progression.length) {
         chordIndex = 0;
-        progressionIndex = (progressionIndex + 1) % progressions.length;
-    }
-    return chordName;
-}
-function getChordFullName(key, degree, originalChord, finalChord, inversion, mode) {
-    const qmap = mode === "major" ? degreeQualityMapMajor : degreeQualityMapMinor;
-    const quality = qmap[degree];
-    const root = originalChord[0];
-    let chordName = quality == "maj" ? root : `${root} ${quality}`;
-    if (inversion > 0) {
-        chordName = chordName.split(' ')[0];
-        chordName += `/${finalChord[0]}`;
+        progressionIndex = (progressionIndex + 1) % p.length;
     }
     return chordName;
 }
@@ -257,12 +297,8 @@ function voiceLeadingDistance(ch1, ch2) {
     return dist;
 }
 function noteDistance(a, b) {
-    const enhToSharp = (n) => {
-        const map = { "Bb": "A#", "Eb": "D#", "Ab": "G#", "Db": "C#", "Gb": "F#", "Cb": "B", "Fb": "E" };
-        return map[n] || n;
-    };
-    let A = enhToSharp(a);
-    let B = enhToSharp(b);
+    let A = toSharpName(a);
+    let B = toSharpName(b);
     let iA = noteNames.indexOf(A);
     let iB = noteNames.indexOf(B);
     if (iA < 0 || iB < 0)
@@ -284,30 +320,122 @@ function closestInversion(prevChord, chord) {
     candidates.sort((a, b) => a.dist - b.dist);
     return { inv: candidates[0].inv, inversion: candidates[0].inversion };
 }
+function getNextSingleNote() {
+    let scale = (chosenMode === "major" ? majorScales[chosenKey] : minorScales[chosenKey]) || [];
+    if (selectedLevel === 1) {
+        let note = scale[chordIndex];
+        chordIndex++;
+        if (chordIndex >= scale.length)
+            chordIndex = 0;
+        return note || "C";
+    }
+    else {
+        let idx = Math.floor(Math.random() * scale.length);
+        return scale[idx] || "C";
+    }
+}
+function getChordFullName(key, degree, baseChord, finalChord) {
+    let mapRef = (chosenMode === "major" ? degreeQualityMapMajor : degreeQualityMapMinor);
+    let quality = mapRef[degree] || "???";
+    let root = baseChord[0];
+    if (quality === "maj")
+        return root;
+    return `${root} ${quality}`;
+}
+function noteNameToMidi(noteName, octave = 2) {
+    let sharps = toSharpName(noteName);
+    let i = noteNames.indexOf(sharps);
+    if (i < 0)
+        i = 0;
+    return octave * 12 + i;
+}
+function createBassForLevel5(baseChord, chordAsc) {
+    let root = baseChord[0];
+    let bassMidi = noteNameToMidi(root, 2);
+    if (bassMidi < 0)
+        bassMidi = 0;
+    let bassNote = noteNames[bassMidi % 12] || root;
+    return bassNote;
+}
+function generateNoteCircle() {
+    let note = getNextSingleNote();
+    let element = document.createElement('div');
+    element.className = "chordCircle";
+    element.innerHTML = note;
+    let gameArea = document.getElementById('gameArea');
+    element.style.left = (Math.random() * (window.innerWidth - 100)) + "px";
+    element.style.top = "-100px";
+    gameArea.appendChild(element);
+    circleSpawnCount++;
+    let speedScale = 1 + circleSpawnCount * 0.01;
+    circles.push({
+        element,
+        noteOrChordName: note,
+        noteOrChordNotes: [note],
+        y: -100,
+        speed: speedScale,
+        destroyed: false
+    });
+}
 function generateChordCircle() {
     let chordDegree = getNextChordName();
-    let originalChord = chordDegreesToChordNotes(chosenKey, chordDegree, chosenMode);
-    originalChord = originalChord.map(n => normalizeChordNote(n));
-    let lastChord = circles.length > 0 ? circles[circles.length - 1].chordNotes : null;
-    let ci = closestInversion(lastChord, originalChord);
-    let invertedChord = ci.inv.map(n => normalizeChordNote(n));
-    let chordFullName = getChordFullName(chosenKey, chordDegree, originalChord, invertedChord, ci.inversion, chosenMode);
+    let baseChord = chordDegreesToChordNotes(chosenKey, chordDegree, chosenMode);
+    let lastChord = circles.length > 0 ? circles[circles.length - 1].noteOrChordNotes : null;
+    let ci = closestInversion(lastChord, baseChord);
+    let invertedChord = ci.inv;
+    let chordAsc = [...invertedChord].sort((a, b) => noteNames.indexOf(a) - noteNames.indexOf(b));
+    let chordLabel = getChordFullName(chosenKey, chordDegree, baseChord, invertedChord);
+    let finalChord = chordAsc;
+    if (selectedLevel === 5) {
+        let bass = createBassForLevel5(baseChord, chordAsc);
+        finalChord = [bass, ...chordAsc];
+    }
+    let displayChord;
+    if (selectedLevel === 4) {
+        displayChord = chordAsc;
+    }
+    else if (selectedLevel === 3) {
+        displayChord = baseChord.slice();
+    }
+    else if (selectedLevel === 5) {
+        displayChord = chordAsc;
+    }
+    else {
+        displayChord = invertedChord;
+    }
     let element = document.createElement('div');
-    element.className = 'chordCircle';
+    element.className = "chordCircle";
     let htmlContent = "";
     if (showFunctions) {
         htmlContent += `<div>${chordDegree}</div>`;
     }
-    htmlContent += `<div>${chordFullName}</div>`;
+    htmlContent += `<div>${chordLabel}</div>`;
     if (showNotes) {
-        htmlContent += `<div>${invertedChord.join("-")}</div>`;
+        htmlContent += `<div>${displayChord.join("-")}</div>`;
     }
     element.innerHTML = htmlContent;
-    const gameArea = document.getElementById('gameArea');
+    let gameArea = document.getElementById('gameArea');
     element.style.left = (Math.random() * (window.innerWidth - 100)) + "px";
     element.style.top = "-100px";
     gameArea.appendChild(element);
-    circles.push({ element: element, chordName: chordDegree, chordNotes: invertedChord, y: -100, speed: 1 + Math.random(), destroyed: false });
+    circleSpawnCount++;
+    let speedScale = 1 + circleSpawnCount * 0.01;
+    circles.push({
+        element,
+        noteOrChordName: chordLabel,
+        noteOrChordNotes: finalChord,
+        y: -100,
+        speed: speedScale,
+        destroyed: false
+    });
+}
+function generateCircleByLevel() {
+    if (selectedLevel === 1 || selectedLevel === 2) {
+        generateNoteCircle();
+    }
+    else {
+        generateChordCircle();
+    }
 }
 function updateCircles() {
     for (let i = circles.length - 1; i >= 0; i--) {
@@ -335,17 +463,17 @@ function updateCircles() {
 function updateCirclesAndSpawn(timestamp) {
     updateCircles();
     if (timestamp - lastSpawn > 3000) {
-        generateChordCircle();
+        generateCircleByLevel();
         lastSpawn = timestamp;
     }
 }
 function endGame() {
     gameRunning = false;
-    const finalScore = document.getElementById('finalScore');
+    let finalScore = document.getElementById('finalScore');
     if (finalScore)
         finalScore.innerText = "Your score: " + score;
-    const gameScreen = document.getElementById('gameScreen');
-    const endScreen = document.getElementById('endScreen');
+    let gameScreen = document.getElementById('gameScreen');
+    let endScreen = document.getElementById('endScreen');
     if (gameScreen)
         gameScreen.classList.remove('active');
     if (endScreen)
@@ -354,20 +482,30 @@ function endGame() {
 }
 function stopAllSounds() {
     for (let note in activeOscillators) {
-        let oscData = activeOscillators[note];
-        oscData.osc.stop();
+        activeOscillators[note].osc.stop();
     }
     activeOscillators = {};
 }
 function startGame() {
-    const midi = document.getElementById('midiSelect');
-    const keySel = document.getElementById('keySelect');
-    const notesCheck = document.getElementById('showNotesCheckbox');
-    const functionsCheck = document.getElementById('showFunctionsCheckbox');
-    const modeInputs = document.querySelectorAll('input[name="mode"]');
-    const setupScreen = document.getElementById('setupScreen');
-    const gameScreen = document.getElementById('gameScreen');
-    const endScreen = document.getElementById('endScreen');
+    let midi = document.getElementById('midiSelect');
+    let keySel = document.getElementById('keySelect');
+    let notesCheck = document.getElementById('showNotesCheckbox');
+    let functionsCheck = document.getElementById('showFunctionsCheckbox');
+    let modeInputs = document.querySelectorAll('input[name="mode"]');
+    let levelSelect = document.getElementById('levelSelect');
+    let setupScreen = document.getElementById('setupScreen');
+    let gameScreen = document.getElementById('gameScreen');
+    let endScreen = document.getElementById('endScreen');
+    circleSpawnCount = 0;
+    if (levelSelect) {
+        selectedLevel = parseInt(levelSelect.value, 10);
+        if (isNaN(selectedLevel) || selectedLevel < 1 || selectedLevel > 5) {
+            selectedLevel = 4;
+        }
+    }
+    else {
+        selectedLevel = 4;
+    }
     if (notesCheck)
         showNotes = notesCheck.checked;
     if (functionsCheck)
@@ -378,12 +516,14 @@ function startGame() {
         alert("Please select a valid MIDI input device");
         return;
     }
-    modeInputs.forEach(m => { if (m.checked)
-        chosenMode = m.value; });
-    const selectedId = midi ? midi.value : "";
+    modeInputs.forEach(m => {
+        if (m.checked)
+            chosenMode = m.value;
+    });
+    let selectedId = midi ? midi.value : "";
     let inputs = [];
-    midiAccess.inputs.forEach((input) => { inputs.push(input); });
-    midiInput = inputs.find((i) => i.id === selectedId);
+    midiAccess.inputs.forEach(inp => inputs.push(inp));
+    midiInput = inputs.find(i => i.id === selectedId);
     if (midiInput)
         midiInput.onmidimessage = onMIDIMessage;
     score = 0;
@@ -404,19 +544,19 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 }
 function populateMIDIInputs() {
-    const select = document.getElementById('midiSelect');
+    let select = document.getElementById('midiSelect');
     if (!select)
         return;
     select.innerHTML = "";
     let inputs = [];
-    midiAccess.inputs.forEach((input) => { inputs.push(input); });
+    midiAccess.inputs.forEach(inp => inputs.push(inp));
     if (inputs.length === 0) {
         let option = document.createElement('option');
         option.innerText = "No MIDI devices found";
         select.appendChild(option);
     }
     else {
-        inputs.forEach((input) => {
+        inputs.forEach(input => {
             let option = document.createElement('option');
             option.value = input.id;
             option.innerText = input.name || "";
@@ -424,15 +564,23 @@ function populateMIDIInputs() {
         });
     }
 }
+function isValidMidiInput(midiInputs) {
+    if (!midiInputs || midiInputs.length === 0)
+        return false;
+    if (midiInputs.length === 1 && midiInputs[0].innerText === "Midi Through Port-0") {
+        return false;
+    }
+    return true;
+}
 const startButton = document.getElementById('startButton');
 if (startButton)
     startButton.addEventListener('click', startGame);
 const restartButton = document.getElementById('restartButton');
 if (restartButton)
     restartButton.addEventListener('click', () => {
-        const setupScreen = document.getElementById('setupScreen');
-        const gameScreen = document.getElementById('gameScreen');
-        const endScreen = document.getElementById('endScreen');
+        let setupScreen = document.getElementById('setupScreen');
+        let gameScreen = document.getElementById('gameScreen');
+        let endScreen = document.getElementById('endScreen');
         if (setupScreen)
             setupScreen.classList.add('active');
         if (gameScreen)
@@ -450,33 +598,4 @@ if (navigator.requestMIDIAccess) {
         console.error("Failed to access MIDI devices:", err);
         alert("MIDI access was denied. Please allow MIDI access to use Chord Nebula.");
     });
-}
-function isValidMidiInput(midiInputs) {
-    if (!midiInputs || midiInputs.length === 0) {
-        return false;
-    }
-    if (midiInputs.length === 1 && midiInputs[0].innerText === "Midi Through Port-0") {
-        return false;
-    }
-    return true;
-}
-function showPopup() {
-    if (popupOverlay) {
-        popupOverlay.classList.add('active');
-    }
-}
-function hidePopup() {
-    if (popupOverlay) {
-        popupOverlay.classList.remove('active');
-    }
-}
-if (closePopupButton) {
-    closePopupButton.addEventListener('click', hidePopup);
-}
-window.addEventListener('load', showPopup);
-function displayErrorMessage(message) {
-    const errorMessageDiv = document.getElementById("error-message");
-    if (errorMessageDiv) {
-        errorMessageDiv.textContent = message;
-    }
 }

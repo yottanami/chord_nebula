@@ -33,7 +33,7 @@ h1 {
   margin-bottom: 20px;
 }
 
-#midiSelect, #keySelect {
+#midiSelect, #keySelect, #levelSelect {
   padding: 10px;
   font-size: 12px;
   margin: 10px;
