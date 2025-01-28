@@ -575,6 +575,26 @@ function isValidMidiInput(midiInputs) {
     }
     return true;
 }
+function showPopup() {
+    if (popupOverlay) {
+        popupOverlay.classList.add('active');
+    }
+}
+function hidePopup() {
+    if (popupOverlay) {
+        popupOverlay.classList.remove('active');
+    }
+}
+if (closePopupButton) {
+    closePopupButton.addEventListener('click', hidePopup);
+}
+window.addEventListener('load', showPopup);
+function displayErrorMessage(message) {
+    const errorMessageDiv = document.getElementById("error-message");
+    if (errorMessageDiv) {
+        errorMessageDiv.textContent = message;
+    }
+}
 const startButton = document.getElementById('startButton');
 if (startButton)
     startButton.addEventListener('click', startGame);
