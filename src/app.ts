@@ -32,6 +32,21 @@ let activeOscillators: { [key: number]: { osc: OscillatorNode; gain: GainNode } 
 let selectedLevel: number = 4;
 let circleSpawnCount: number = 0;
 
+type ChordQuality =
+  | "maj"
+  | "min"
+  | "dim"
+  | "aug"
+  | "dom7"
+  | "maj7"
+  | "min7"
+  | "hdim7"
+  | "dim7"
+  | "maj9"
+  | "min9"
+  | "dom9"
+  | "hdim9";
+
 const noteNames: string[] = [
   "C","C#","D","D#","E","F","F#","G","G#","A","A#","B"
 ];
@@ -86,6 +101,20 @@ const degreeQualityMapMajor:any={
 };
 const degreeQualityMapMinor:any={
   "i":"min","ii°":"dim","III":"maj","iv":"min","v":"min","VI":"maj","VII":"maj"
+};
+
+const degreeSeventhQualityMapMajor: { [key: string]: ChordQuality } = {
+  "I":"maj7","ii":"min7","iii":"min7","IV":"maj7","V":"dom7","vi":"min7","vii":"hdim7"
+};
+const degreeSeventhQualityMapMinor: { [key: string]: ChordQuality } = {
+  "i":"min7","ii°":"hdim7","III":"maj7","iv":"min7","v":"min7","VI":"maj7","VII":"dom7"
+};
+
+const degreeNinthQualityMapMajor: { [key: string]: ChordQuality } = {
+  "I":"maj9","ii":"min9","iii":"min9","IV":"maj9","V":"dom9","vi":"min9","vii":"hdim9"
+};
+const degreeNinthQualityMapMinor: { [key: string]: ChordQuality } = {
+  "i":"min9","ii°":"hdim9","III":"maj9","iv":"min9","v":"min9","VI":"maj9","VII":"dom9"
 };
 
 const majorProgressions=[
@@ -174,6 +203,13 @@ function checkChords():void {
         }
       } else if(selectedLevel===5){
         if(matchesLevel5(c.noteOrChordNotes)){
+          playChordSound(c.noteOrChordNotes);
+          c.destroyed=true;
+          score++;
+          updateScore();
+        }
+      } else if(selectedLevel>=6){
+        if(matchesLevel1to3(c.noteOrChordNotes)){
           playChordSound(c.noteOrChordNotes);
           c.destroyed=true;
           score++;
@@ -287,6 +323,146 @@ function chordDegreesToChordNotes(key:string, degree:string, mode:"major"|"minor
   return [root, third, fifth].map(normalizeChordNote);
 }
 
+function chordQualityToIntervals(quality: ChordQuality): number[] {
+  switch(quality){
+    case "maj":
+      return [0,4,7];
+    case "min":
+      return [0,3,7];
+    case "dim":
+      return [0,3,6];
+    case "aug":
+      return [0,4,8];
+    case "dom7":
+      return [0,4,7,10];
+    case "maj7":
+      return [0,4,7,11];
+    case "min7":
+      return [0,3,7,10];
+    case "hdim7":
+      return [0,3,6,10];
+    case "dim7":
+      return [0,3,6,9];
+    case "maj9":
+      return [0,4,7,11,14];
+    case "min9":
+      return [0,3,7,10,14];
+    case "dom9":
+      return [0,4,7,10,14];
+    case "hdim9":
+      return [0,3,6,10,14];
+    default:
+      return [0,4,7];
+  }
+}
+
+function chordQualityToLabel(quality: ChordQuality): string {
+  switch(quality){
+    case "maj":
+      return "";
+    case "min":
+      return "m";
+    case "dim":
+      return "dim";
+    case "aug":
+      return "aug";
+    case "dom7":
+      return "7";
+    case "maj7":
+      return "maj7";
+    case "min7":
+      return "m7";
+    case "hdim7":
+      return "m7b5";
+    case "dim7":
+      return "dim7";
+    case "maj9":
+      return "maj9";
+    case "min9":
+      return "m9";
+    case "dom9":
+      return "9";
+    case "hdim9":
+      return "m9b5";
+    default:
+      return "";
+  }
+}
+
+function buildChordFromRoot(root: string, quality: ChordQuality): string[] {
+  let rootSharp= toSharpName(root);
+  let rootIndex= noteNames.indexOf(rootSharp);
+  if(rootIndex<0) rootIndex= 0;
+  let intervals= chordQualityToIntervals(quality);
+  return intervals.map(semi => noteNames[(rootIndex+ semi)%12]);
+}
+
+function getTriadQuality(degree: string): ChordQuality {
+  let mapRef= (chosenMode==="major"? degreeQualityMapMajor: degreeQualityMapMinor);
+  return mapRef[degree] || "maj";
+}
+
+function getSeventhQuality(degree: string): ChordQuality {
+  let mapRef= (chosenMode==="major"? degreeSeventhQualityMapMajor: degreeSeventhQualityMapMinor);
+  return mapRef[degree] || "dom7";
+}
+
+function getNinthQuality(degree: string): ChordQuality {
+  let mapRef= (chosenMode==="major"? degreeNinthQualityMapMajor: degreeNinthQualityMapMinor);
+  return mapRef[degree] || "dom9";
+}
+
+function isDominantDegree(degree: string): boolean {
+  let clean= degree.replace("°","");
+  return clean==="V" || clean==="v";
+}
+
+function chooseLevel8Quality(degree: string): ChordQuality {
+  let baseQuality= getTriadQuality(degree);
+  let options: ChordQuality[] = [baseQuality];
+  if(baseQuality==="maj"){
+    options.push("maj7","maj9");
+  } else if(baseQuality==="min"){
+    options.push("min7","min9");
+  } else if(baseQuality==="dim"){
+    options.push("hdim7","hdim9","dim7");
+  }
+  if(isDominantDegree(degree)){
+    options.push("dom7","dom9");
+  }
+  if(Math.random()<0.2){
+    options.push("aug");
+  }
+  if(Math.random()<0.15 && baseQuality!=="dim"){
+    options.push("dim");
+  }
+  return options[Math.floor(Math.random()*options.length)];
+}
+
+function getChordRootFromDegree(key: string, degree: string, mode: "major"|"minor"): string {
+  let scale= (mode==="major"? majorScales[key]: minorScales[key])|| [];
+  let degMap= (mode==="major"? degreeMapMajor: degreeMapMinor);
+  let idx= degMap[degree];
+  if(idx===undefined) return "C";
+  return scale[idx] || "C";
+}
+
+function getChordSpecForLevel(degree: string): { root: string; quality: ChordQuality; notes: string[] } {
+  let root= getChordRootFromDegree(chosenKey, degree, chosenMode);
+  let quality: ChordQuality;
+  if(selectedLevel===6){
+    quality= getSeventhQuality(degree);
+  } else if(selectedLevel===7){
+    quality= Math.random()<0.5 ? "dim" : "aug";
+  } else if(selectedLevel===8){
+    quality= chooseLevel8Quality(degree);
+  } else {
+    quality= getTriadQuality(degree);
+  }
+  let notes= buildChordFromRoot(root, quality);
+  return { root, quality, notes };
+}
+
 function getProgressions():string[][] {
   return (chosenMode==="major"? majorProgressions: minorProgressions);
 }
@@ -360,13 +536,14 @@ function getChordFullName(
   key: string,
   degree: string,
   baseChord: string[],
-  finalChord: string[]
+  finalChord: string[],
+  quality?: ChordQuality
 ): string {
-  let mapRef= (chosenMode==="major"? degreeQualityMapMajor: degreeQualityMapMinor);
-  let quality= mapRef[degree] || "???";
   let root= baseChord[0];
-  if(quality==="maj") return root;
-  return `${root} ${quality}`;
+  let resolvedQuality= quality || getTriadQuality(degree);
+  let labelSuffix= chordQualityToLabel(resolvedQuality);
+  if(labelSuffix==="") return root;
+  return `${root}${labelSuffix}`;
 }
 
 function noteNameToMidi(noteName:string, octave:number=2):number {
@@ -409,12 +586,13 @@ function generateNoteCircle():void {
 
 function generateChordCircle():void {
   let chordDegree= getNextChordName();
-  let baseChord= chordDegreesToChordNotes(chosenKey, chordDegree, chosenMode);
+  let chordSpec= getChordSpecForLevel(chordDegree);
+  let baseChord= chordSpec.notes;
   let lastChord= circles.length>0? circles[circles.length-1].noteOrChordNotes: null;
   let ci= closestInversion(lastChord, baseChord);
   let invertedChord= ci.inv;
   let chordAsc= [...invertedChord].sort((a,b)=> noteNames.indexOf(a)- noteNames.indexOf(b));
-  let chordLabel= getChordFullName(chosenKey, chordDegree, baseChord, invertedChord);
+  let chordLabel= getChordFullName(chosenKey, chordDegree, baseChord, invertedChord, chordSpec.quality);
 
   let finalChord= chordAsc;
   if(selectedLevel===5){
@@ -536,7 +714,7 @@ function startGame():void {
 
   if(levelSelect){
     selectedLevel= parseInt(levelSelect.value,10);
-    if(isNaN(selectedLevel)|| selectedLevel<1|| selectedLevel>5){
+    if(isNaN(selectedLevel)|| selectedLevel<1|| selectedLevel>8){
       selectedLevel=4;
     }
   } else {
