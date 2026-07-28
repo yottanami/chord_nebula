@@ -736,7 +736,7 @@ function stopAllSounds():void {
   activeOscillators={};
 }
 
-function startGame():void {
+async function startGame():Promise<void> {
   let midi= document.getElementById('midiSelect') as HTMLSelectElement|null;
   let keySel= document.getElementById('keySelect') as HTMLSelectElement|null;
   let notesCheck= document.getElementById('showNotesCheckbox') as HTMLInputElement|null;
@@ -756,6 +756,14 @@ function startGame():void {
     }
   } else {
     selectedLevel=4;
+  }
+
+  // Real enforcement point -- disabling the <option> elements (see
+  // refreshUnlockUI) is only a UI nicety, not what actually stops a
+  // locked level from starting.
+  if(!isLevelAllowed(selectedLevel, await isUnlocked())){
+    alert("Level "+selectedLevel+" needs the paid unlock. Levels 1-3 are free -- see the unlock section to buy or enter a license key.");
+    return;
   }
 
   if(notesCheck) showNotes= notesCheck.checked;
@@ -824,6 +832,119 @@ function isValidMidiInput(midiInputs:HTMLOptionsCollection| undefined):boolean {
   return true;
 }
 
+// --- Paid-level unlock ---
+//
+// Levels 1-3 (single notes, basic triads) are free; levels 4-8 need a
+// verified one-time purchase. See worker/README.md for the full design
+// rationale -- summary: a static GitHub Pages site can't securely gate
+// anything (any check here can be patched out in devtools by a
+// sufficiently determined user), so this isn't real DRM. What it does do:
+// require an actual Gumroad purchase (checked server-side, since only
+// Gumroad's API knows about refunds/chargebacks) before minting an
+// unlock token, and let that token verify itself entirely offline
+// afterward via a real ECDSA signature, so normal page loads never
+// re-contact the Worker or Gumroad.
+
+const FREE_LEVEL_MAX = 3;
+const UNLOCK_TOKEN_STORAGE_KEY = "chordNebulaUnlockToken";
+// Set these two after deploying worker/ and creating the Gumroad product
+// (see worker/README.md) -- placeholders won't work.
+const LICENSE_VERIFY_URL = "https://REPLACE_ME.workers.dev/verify";
+const GUMROAD_PRODUCT_URL = "https://REPLACE_ME.gumroad.com/l/chord-nebula";
+// The public half of the Worker's signing keypair. Safe to commit: a
+// public key can verify a signature but can't forge one. Generate
+// alongside the Worker's PRIVATE_KEY_JWK secret -- see worker/README.md.
+const UNLOCK_PUBLIC_KEY_JWK: JsonWebKey = {
+  kty: "REPLACE_ME",
+};
+
+function base64UrlToBytes(value: string): Uint8Array {
+  let padded= value.replace(/-/g,'+').replace(/_/g,'/');
+  while(padded.length%4!==0) padded+= '=';
+  let binary= atob(padded);
+  let bytes= new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i]= binary.charCodeAt(i);
+  return bytes;
+}
+
+/** Verifies an unlock token's ECDSA signature against UNLOCK_PUBLIC_KEY_JWK, entirely offline -- no network call. */
+async function verifyLicenseToken(token:string):Promise<boolean> {
+  let parts= token.split('.');
+  if(parts.length!==2) return false;
+  try {
+    let payloadBytes= base64UrlToBytes(parts[0]);
+    let signature= base64UrlToBytes(parts[1]);
+    let key= await crypto.subtle.importKey(
+      "jwk", UNLOCK_PUBLIC_KEY_JWK, {name:"ECDSA", namedCurve:"P-256"}, false, ["verify"]
+    );
+    let valid= await crypto.subtle.verify({name:"ECDSA", hash:"SHA-256"}, key, signature, payloadBytes);
+    if(!valid) return false;
+    let payload= JSON.parse(new TextDecoder().decode(payloadBytes));
+    return payload.unlocked===true;
+  } catch(e) {
+    return false;
+  }
+}
+
+/** Whether the stored unlock token (if any) is present and cryptographically valid. */
+async function isUnlocked():Promise<boolean> {
+  let token= localStorage.getItem(UNLOCK_TOKEN_STORAGE_KEY);
+  if(!token) return false;
+  return verifyLicenseToken(token);
+}
+
+interface UnlockResult { ok:boolean; error?:string; }
+
+/** Submits a license key to the verification Worker; stores the returned token on success. */
+async function unlockWithLicenseKey(licenseKey:string):Promise<UnlockResult> {
+  try {
+    let res= await fetch(LICENSE_VERIFY_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({licenseKey})
+    });
+    let data= await res.json();
+    if(!res.ok){
+      return {ok:false, error: data.error|| "Could not verify that license key."};
+    }
+    localStorage.setItem(UNLOCK_TOKEN_STORAGE_KEY, data.token);
+    return {ok:true};
+  } catch(e) {
+    return {ok:false, error:"Network error while verifying your license key."};
+  }
+}
+
+/** Whether LEVEL is playable given the current unlock state. */
+function isLevelAllowed(level:number, unlocked:boolean):boolean {
+  return level<=FREE_LEVEL_MAX|| unlocked;
+}
+
+/**
+ * Reflects unlock state in the UI: disables levels 4-8 in the dropdown
+ * (a nicety -- startGame's own check is what actually enforces this) and
+ * toggles the unlock form vs. an "unlocked" message.
+ */
+async function refreshUnlockUI():Promise<void> {
+  let unlocked= await isUnlocked();
+
+  let levelSelect= document.getElementById('levelSelect') as HTMLSelectElement|null;
+  if(levelSelect){
+    for(let i=0;i<levelSelect.options.length;i++){
+      let opt= levelSelect.options[i];
+      let lvl= parseInt(opt.value,10);
+      if(!isNaN(lvl)) opt.disabled= !isLevelAllowed(lvl, unlocked);
+    }
+  }
+
+  let unlockForm= document.getElementById('unlockForm');
+  let unlockedMessage= document.getElementById('unlockedMessage');
+  if(unlockForm) unlockForm.style.display= unlocked? 'none':'';
+  if(unlockedMessage) unlockedMessage.style.display= unlocked? '':'none';
+
+  let purchaseLink= document.getElementById('purchaseLink') as HTMLAnchorElement|null;
+  if(purchaseLink) purchaseLink.href= GUMROAD_PRODUCT_URL;
+}
+
 function showPopup(): void {
   if (popupOverlay) {
     popupOverlay.classList.add('active');
@@ -859,6 +980,26 @@ function displayErrorMessage(message) {
 
 const startButton= document.getElementById('startButton');
 if(startButton) startButton.addEventListener('click', startGame);
+
+refreshUnlockUI();
+
+const unlockButton= document.getElementById('unlockButton');
+const licenseKeyInput= document.getElementById('licenseKeyInput') as HTMLInputElement|null;
+const unlockError= document.getElementById('unlockError');
+if(unlockButton) unlockButton.addEventListener('click', async ()=>{
+  let key= licenseKeyInput? licenseKeyInput.value: "";
+  if(unlockError) unlockError.textContent= "";
+  (unlockButton as HTMLButtonElement).disabled= true;
+  (unlockButton as HTMLButtonElement).textContent= "Verifying...";
+  let result= await unlockWithLicenseKey(key);
+  (unlockButton as HTMLButtonElement).disabled= false;
+  (unlockButton as HTMLButtonElement).textContent= "Unlock";
+  if(result.ok){
+    await refreshUnlockUI();
+  } else if(unlockError){
+    unlockError.textContent= result.error|| "Could not verify that license key.";
+  }
+});
 
 const restartButton= document.getElementById('restartButton');
 if(restartButton) restartButton.addEventListener('click', ()=>{

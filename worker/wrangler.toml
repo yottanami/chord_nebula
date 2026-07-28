@@ -1,0 +1,14 @@
+name = "chord-nebula-license-verify"
+main = "src/verify.ts"
+compatibility_date = "2024-09-23"
+
+[vars]
+# Gumroad's own docs treat this as public info (it just says which
+# product to check licenses against) -- safe to commit. Replace with the
+# real product ID once the Gumroad product exists.
+GUMROAD_PRODUCT_ID = "REPLACE_ME"
+# The one origin allowed to call this Worker.
+ALLOWED_ORIGIN = "https://chords.yottanami.com"
+
+# PRIVATE_KEY_JWK is NOT set here -- it's a secret, set via
+# `wrangler secret put PRIVATE_KEY_JWK`. See worker/README.md.

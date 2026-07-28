@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2022"],
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "noImplicitAny": true,
+    "moduleResolution": "bundler",
+    "module": "es2022",
+    "noEmit": true
+  },
+  // Deliberately src/ only, not test/: the Worker itself runs under the
+  // Workers runtime (types: @cloudflare/workers-types), but the test
+  // files run under real Node via Vitest and need node:crypto -- two
+  // different global environments that would conflict if typechecked
+  // together (e.g. both declare `fetch`/`Response` slightly differently).
+  // Vitest transpiles test files itself and doesn't depend on this
+  // config to run them.
+  "include": ["src/**/*.ts"]
+}

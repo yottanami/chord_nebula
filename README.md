@@ -76,6 +76,16 @@ real chord/game logic in `src/app.ts` directly (see
 `test/support/loadApp.ts` for how, given `src/app.ts` isn't itself a
 module with anything to import).
 
+## Levels & unlocking
+
+Levels 1-3 (single notes, basic triads) are free. Levels 4-8 need a
+one-time purchase, verified through a small Cloudflare Worker — the one
+piece of server-side infrastructure this otherwise-static site needs,
+since a pure GitHub Pages site can't itself verify a purchase or gate
+content. See [`worker/README.md`](worker/README.md) for the full design
+rationale (Gumroad + a self-verifying signed token, not "call home on
+every page load") and deployment steps.
+
 ## Contributing
 I welcome contributions from developers and music enthusiasts! If you're interested in enhancing Chord Nebula, here's how you can get involved:
 
