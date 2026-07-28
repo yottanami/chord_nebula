@@ -28,6 +28,7 @@ let chordIndex: number = 0;
 let showNotes: boolean = true;
 let showFunctions: boolean = false;
 let lastSpawn: number = 0;
+let lastFrameTime: number = 0;
 let activeOscillators: { [key: number]: { osc: OscillatorNode; gain: GainNode } } = {};
 let selectedLevel: number = 4;
 let circleSpawnCount: number = 0;
@@ -52,7 +53,16 @@ const noteNames: string[] = [
 ];
 
 const enhMapToSharp: { [key:string]:string } = {
-  "Bb":"A#","Eb":"D#","Ab":"G#","Db":"C#","Gb":"F#","Cb":"B","Fb":"E"
+  "Bb":"A#","Eb":"D#","Ab":"G#","Db":"C#","Gb":"F#","Cb":"B","Fb":"E",
+  // The C#/F# major and D#/A# minor scales below spell their 3rd/7th
+  // degrees as E#/B# (standard music notation for those keys), but
+  // MIDI-derived note names (midiNoteToName) only ever produce the 12
+  // noteNames spellings -- "F"/"C" never "E#"/"B#". Without these, a
+  // correctly-played chord in one of those keys could never match,
+  // since the chord spec's note names and the played notes' names
+  // would never normalize to the same string. This was TODO.org's
+  // "not recognising F as E#" bug.
+  "E#":"F","B#":"C"
 };
 
 const majorScales:{[key:string]:string[]}={
@@ -187,6 +197,16 @@ function onMIDIMessage(event:MIDIMessageEvent):void {
     let idx= noteOnStack.findIndex(obj => obj.midiNumber=== midiNumber);
     if(idx>-1) noteOnStack.splice(idx,1);
     stopNoteSound(midiNumber);
+    // checkChords() must run here too, not just on note-on: if the player
+    // adds an extra wrong note alongside the correct ones and then
+    // releases just that wrong note (rather than pressing another note),
+    // the chord only becomes correct as a result of this release. Without
+    // this, that completion was never detected until some unrelated
+    // note-on happened later, if ever -- the "continuous note" bug from
+    // TODO.org, which only showed up on the wrong-note path since a
+    // chord played with only correct notes always completes via a
+    // note-on and never needs the release to be checked.
+    checkChords();
   }
 }
 
@@ -278,9 +298,19 @@ function updateLives():void {
   if(l) l.innerText= "Lives: "+lives;
 }
 
+// Reference frame interval (60fps) that circle speed values are tuned
+// against -- see updateCircles' deltaFactor.
+const REFERENCE_FRAME_MS = 1000/60;
+// Caps a single frame's delta so a backgrounded/throttled tab (rAF pauses
+// while hidden; `timestamp` can jump by seconds on refocus) doesn't teleport
+// circles instead of just resuming normally.
+const MAX_FRAME_DELTA_MS = REFERENCE_FRAME_MS*5;
+
 function gameLoop(timestamp:number):void {
   if(!gameRunning) return;
-  updateCirclesAndSpawn(timestamp);
+  let deltaMs= lastFrameTime===0? REFERENCE_FRAME_MS: Math.min(timestamp-lastFrameTime, MAX_FRAME_DELTA_MS);
+  lastFrameTime= timestamp;
+  updateCirclesAndSpawn(timestamp, deltaMs);
   requestAnimationFrame(gameLoop);
 }
 
@@ -653,11 +683,18 @@ function generateCircleByLevel():void {
   }
 }
 
-function updateCircles():void {
+function updateCircles(deltaMs:number):void {
+  // c.speed is tuned per-frame at REFERENCE_FRAME_MS (60fps); deltaFactor
+  // normalizes movement to real elapsed time instead of frames actually
+  // rendered, so fall speed no longer depends on the display's refresh
+  // rate or on how expensive rendering the current frame was -- both
+  // previously made circles speed up or slow down for reasons unrelated
+  // to gameplay (TODO.org's "speed up by time" bug).
+  let deltaFactor= deltaMs/REFERENCE_FRAME_MS;
   for(let i= circles.length-1;i>=0;i--){
     let c= circles[i];
     if(!c.destroyed){
-      c.y+= c.speed;
+      c.y+= c.speed*deltaFactor;
       c.element.style.top= c.y+"px";
       if(c.y> (window.innerHeight-50)){
         if(c.element.parentNode) c.element.parentNode.removeChild(c.element);
@@ -673,8 +710,8 @@ function updateCircles():void {
   }
 }
 
-function updateCirclesAndSpawn(timestamp:number):void {
-  updateCircles();
+function updateCirclesAndSpawn(timestamp:number, deltaMs:number):void {
+  updateCircles(deltaMs);
   if(timestamp- lastSpawn> 3000){
     generateCircleByLevel();
     lastSpawn= timestamp;
@@ -754,6 +791,7 @@ function startGame():void {
   progressionIndex= 0;
   chordIndex= 0;
   lastSpawn= 0;
+  lastFrameTime= 0;
 
   requestAnimationFrame(gameLoop);
 }

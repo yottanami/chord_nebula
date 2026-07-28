@@ -1,3 +1,0 @@
-* Fix continous note bug (it happens only on wrong notes)
-* Fix not recognising F as E#
-* Speed up by time
