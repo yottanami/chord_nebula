@@ -743,6 +743,12 @@ function hidePopup() {
         popupOverlay.classList.remove('active');
     }
 }
+// --- Pure logic ends here; DOM/browser wiring runs immediately below ---
+// (test/support/loadApp.ts slices the file at this exact comment to load
+// the chord/game logic above it in Node without a DOM, so tests can call
+// functions like matchesLevel4/getChordSpecForLevel directly. Nothing at
+// or above this line may execute top-level code that touches document/
+// window/navigator, or the test loader breaks.)
 if (closePopupButton) {
     closePopupButton.addEventListener('click', hidePopup);
 }
