@@ -894,13 +894,16 @@ function hidePopup(): void {
 // or above this line may execute top-level code that touches document/
 // window/navigator, or the test loader breaks.)
 
+const popupOverlay= document.getElementById('popupOverlay');
+const closePopupButton= document.getElementById('closePopupButton');
+
 if (closePopupButton) {
   closePopupButton.addEventListener('click', hidePopup);
 }
 
 window.addEventListener('load', showPopup);
 
-function displayErrorMessage(message) {
+function displayErrorMessage(message: string) {
     const errorMessageDiv = document.getElementById("error-message");
     if (errorMessageDiv) {
         errorMessageDiv.textContent = message;

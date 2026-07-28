@@ -835,6 +835,8 @@ function hidePopup() {
 // functions like matchesLevel4/getChordSpecForLevel directly. Nothing at
 // or above this line may execute top-level code that touches document/
 // window/navigator, or the test loader breaks.)
+const popupOverlay = document.getElementById('popupOverlay');
+const closePopupButton = document.getElementById('closePopupButton');
 if (closePopupButton) {
     closePopupButton.addEventListener('click', hidePopup);
 }
