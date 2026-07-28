@@ -60,6 +60,22 @@ https://chords.yottanami.com
 - *Start the Game:* Click the "Start Game" button to begin practicing.
 - *Play the Chords:* Play the prompted chords on your MIDI keyboard.
 
+## Development
+
+```bash
+npm install     # installs typescript + vitest (dev-only; the deployed app has no runtime dependencies)
+npm test        # runs the test suite (Vitest)
+npm run build   # compiles src/app.ts -> dist/app.js, same as always
+```
+
+There's no bundler and `dist/app.js` is committed straight to the repo and
+served as-is by GitHub Pages (`index.html` loads it via a plain
+`<script>` tag, not a module) — `npm run build` just formalizes the `tsc`
+compile step that already existed. Tests live in `test/` and exercise the
+real chord/game logic in `src/app.ts` directly (see
+`test/support/loadApp.ts` for how, given `src/app.ts` isn't itself a
+module with anything to import).
+
 ## Contributing
 I welcome contributions from developers and music enthusiasts! If you're interested in enhancing Chord Nebula, here's how you can get involved:
 
