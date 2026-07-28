@@ -1,11 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap');
+
+:root {
+  --accent: #8a5cff;
+  --accent-bright: #b18cff;
+  --miss: #ff4d4d;
+}
 
 body {
   margin: 0;
   background: #000 url('images/background.jpg') no-repeat center center fixed;
   background-size: cover;
-  font-family: 'Press Start 2P', cursive;
+  /* "Press Start 2P" stays for headings/score/lives/circles/buttons --
+     the retro-arcade identity -- but body copy (labels, paragraphs) uses
+     a readable sans-serif; the pixel font at paragraph sizes was hard to
+     read. */
+  font-family: 'Inter', -apple-system, sans-serif;
   color: #fff;
+}
+
+h1, h2, #startButton, #restartButton, #scoreDisplay, #livesDisplay, .chordCircle {
+  font-family: 'Press Start 2P', cursive;
 }
 
 #setupScreen, #gameScreen, #endScreen {
@@ -19,53 +33,99 @@ body {
 }
 
 #setupContainer {
-  background: rgba(0,0,0,0.7);
-  border: 3px solid #fff;
-  border-radius: 10px;
-  padding: 30px;
+  background: rgba(10, 8, 20, 0.78);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 36px 40px;
   display: inline-block;
   text-align: center;
-  margin-top: 100px;
+  margin-top: 80px;
+  max-width: 480px;
+  box-shadow: 0 0 40px rgba(138, 92, 255, 0.25);
 }
 
 h1 {
-  font-size: 1.5em;
-  margin-bottom: 20px;
+  font-size: 1.4em;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+#setupContainer > p {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.85;
+  margin: 8px 0 20px;
+}
+
+.formRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 14px 0;
+  flex-wrap: wrap;
+}
+
+.formRow label {
+  font-size: 13px;
 }
 
 #midiSelect, #keySelect, #levelSelect {
-  padding: 10px;
-  font-size: 12px;
-  margin: 10px;
-  font-family: 'Press Start 2P', cursive;
-  background: #222;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  background: #1a1626;
   color: #fff;
-  border: 2px solid #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 6px;
+}
+
+#midiSelect:focus, #keySelect:focus, #levelSelect:focus {
+  outline: none;
+  border-color: var(--accent-bright);
+}
+
+#levelSelect optgroup {
+  font-style: normal;
+  color: var(--accent-bright);
+}
+
+#levelSelect option {
+  color: #fff;
+  background: #1a1626;
 }
 
 #showNotesCheckbox, #showFunctionsCheckbox {
-  transform: scale(1.5);
-  margin-top: 17px;
-  margin-bottom: 15px;
-  margin-right: 10px;
+  transform: scale(1.3);
+  accent-color: var(--accent);
 }
 
 .modeRadio {
-    margin-top: 10px;
-    margin-bottom: 10px;
+  accent-color: var(--accent);
 }
 
 #startButton, #restartButton {
-  padding: 10px 20px;
-  font-size: 16px;
+  padding: 14px 28px;
+  font-size: 14px;
   cursor: pointer;
-  margin: 20px auto;
+  margin: 24px auto 4px;
   display: inline-block;
-  background: #444;
+  background: linear-gradient(135deg, var(--accent), #5b3bb0);
   color: #fff;
-  border: 2px solid #fff;
-  border-radius: 5px;
+  border: none;
+  border-radius: 8px;
   text-decoration: none;
+  box-shadow: 0 4px 14px rgba(138, 92, 255, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#startButton:hover, #restartButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(138, 92, 255, 0.55);
+}
+
+#startButton:active, #restartButton:active {
+  transform: translateY(0);
 }
 
 #gameArea {
@@ -77,6 +137,15 @@ h1 {
   background-size: cover;
   margin: 0 auto;
   box-sizing: border-box;
+  border-radius: 8px;
+  transition: box-shadow 0.15s ease;
+}
+
+/* Brief red pulse around the play area when a circle is missed --
+   deliberately just a border/shadow change, not a layout-affecting
+   property, so it can't cause reflow/jank. */
+#gameArea.missFlash {
+  box-shadow: 0 0 0 4px var(--miss), inset 0 0 60px rgba(255, 77, 77, 0.35);
 }
 
 .chordCircle {
@@ -95,18 +164,36 @@ h1 {
   padding: 5px;
   box-sizing: border-box;
   color: #000;
-  font-family: 'Press Start 2P', cursive;
   line-height: 1.8;
 }
 
+/* Short-lived "pop" shown where a circle was matched -- a separate
+   element from the circle itself (see flashMatch in src/app.ts), so it
+   can't affect the circle-removal/scoring timing it's layered on top of. */
+.matchPop {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 3px solid #7CFC7C;
+  box-shadow: 0 0 24px rgba(124, 252, 124, 0.8);
+  pointer-events: none;
+  animation: matchPop 0.4s ease-out forwards;
+}
+
+@keyframes matchPop {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
 #scoreDisplay, #livesDisplay {
-  font-size: 20px;
-  margin: 10px;
+  font-size: 16px;
+  margin: 6px;
   display: inline-block;
-  padding: 5px 10px;
-  background: rgba(0,0,0,0.5);
-  border: 2px solid #fff;
-  border-radius: 5px;
+  padding: 8px 14px;
+  background: rgba(20, 15, 35, 0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
 }
 
 #endScreen h2 {
@@ -115,8 +202,9 @@ h1 {
 }
 
 #finalScore {
-  font-size: 20px;
+  font-size: 16px;
   margin-bottom: 20px;
+  font-family: 'Inter', sans-serif;
 }
 
 .popup-overlay {
@@ -125,12 +213,12 @@ h1 {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7); 
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000; 
-  visibility: hidden; 
+  z-index: 1000;
+  visibility: hidden;
   opacity: 0;
   transition: visibility 0s, opacity 0.3s ease-in-out;
 }
@@ -150,7 +238,7 @@ h1 {
   max-height: 85%;
   overflow-y: auto;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  font-family: 'arial', sans-serif;
+  font-family: 'Inter', 'arial', sans-serif;
   line-height: 1.5;
 }
 
@@ -173,3 +261,4 @@ h1 {
 #closePopupButton:hover {
   background-color: #666;
 }
+

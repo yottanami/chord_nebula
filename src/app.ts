@@ -217,6 +217,7 @@ function checkChords():void {
       if(selectedLevel===4){
         if(matchesLevel4(c.noteOrChordNotes)){
           playChordSound(c.noteOrChordNotes);
+          flashMatch(c.element);
           c.destroyed=true;
           score++;
           updateScore();
@@ -224,6 +225,7 @@ function checkChords():void {
       } else if(selectedLevel===5){
         if(matchesLevel5(c.noteOrChordNotes)){
           playChordSound(c.noteOrChordNotes);
+          flashMatch(c.element);
           c.destroyed=true;
           score++;
           updateScore();
@@ -231,6 +233,7 @@ function checkChords():void {
       } else if(selectedLevel>=6){
         if(matchesLevel1to3(c.noteOrChordNotes)){
           playChordSound(c.noteOrChordNotes);
+          flashMatch(c.element);
           c.destroyed=true;
           score++;
           updateScore();
@@ -238,6 +241,7 @@ function checkChords():void {
       } else {
         if(matchesLevel1to3(c.noteOrChordNotes)){
           playChordSound(c.noteOrChordNotes);
+          flashMatch(c.element);
           c.destroyed=true;
           score++;
           updateScore();
@@ -296,6 +300,50 @@ function updateScore():void {
 function updateLives():void {
   let l= document.getElementById('livesDisplay');
   if(l) l.innerText= "Lives: "+lives;
+}
+
+// --- Correct/miss feedback ---
+// Previously a correct match had a chime (playChordSound) and the circle
+// vanishing; a missed circle had nothing at all -- no visual or audio cue
+// that anything had gone wrong, just the lives counter silently ticking
+// down. These are deliberately decoupled from the falling-circle
+// removal/scoring logic (self-contained elements/classes that clean up
+// after themselves via setTimeout) so they can't affect gameplay timing.
+
+/** Brief "pop" at a matched circle's position -- a new, throwaway element, not the circle itself, so it can't interfere with updateCircles' own removal timing. */
+function flashMatch(circleElement:HTMLElement):void {
+  let gameArea= document.getElementById('gameArea');
+  if(!gameArea) return;
+  let pop= document.createElement('div');
+  pop.className= 'matchPop';
+  pop.style.left= circleElement.style.left;
+  pop.style.top= circleElement.style.top;
+  gameArea.appendChild(pop);
+  setTimeout(()=>{ if(pop.parentNode) pop.parentNode.removeChild(pop); }, 400);
+}
+
+/** Brief red pulse around the play area when a circle is missed. */
+function flashMiss():void {
+  let gameArea= document.getElementById('gameArea');
+  if(!gameArea) return;
+  gameArea.classList.add('missFlash');
+  setTimeout(()=> gameArea.classList.remove('missFlash'), 300);
+}
+
+/** Short, deliberately unpleasant buzz for a miss -- distinct from playChordSound's chime. */
+function playMissSound():void {
+  ensureAudioContext();
+  let ctx= audioContext!;
+  let startTime= ctx.currentTime;
+  let osc= ctx.createOscillator();
+  osc.type= 'sawtooth';
+  osc.frequency.setValueAtTime(110, startTime);
+  let gainNode= ctx.createGain();
+  gainNode.gain.setValueAtTime(0.15, startTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, startTime+0.2);
+  osc.connect(gainNode).connect(ctx.destination);
+  osc.start();
+  setTimeout(()=> osc.stop(), 220);
 }
 
 // Reference frame interval (60fps) that circle speed values are tuned
@@ -701,6 +749,8 @@ function updateCircles(deltaMs:number):void {
         circles.splice(i,1);
         lives--;
         updateLives();
+        flashMiss();
+        playMissSound();
         if(lives<=0) endGame();
       }
     } else {
@@ -965,13 +1015,16 @@ function hidePopup(): void {
 // or above this line may execute top-level code that touches document/
 // window/navigator, or the test loader breaks.)
 
+const popupOverlay= document.getElementById('popupOverlay');
+const closePopupButton= document.getElementById('closePopupButton');
+
 if (closePopupButton) {
   closePopupButton.addEventListener('click', hidePopup);
 }
 
 window.addEventListener('load', showPopup);
 
-function displayErrorMessage(message) {
+function displayErrorMessage(message: string) {
     const errorMessageDiv = document.getElementById("error-message");
     if (errorMessageDiv) {
         errorMessageDiv.textContent = message;
