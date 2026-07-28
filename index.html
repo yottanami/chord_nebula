@@ -78,54 +78,65 @@
 	<p>Learn and practice piano chords and common chord progressions in both major and minor keys!</p>
 	<p>Select your MIDI keyboard, key, and level:</p>
 
-	<select id="midiSelect"></select><br/>
+	<div class="formRow">
+	  <select id="midiSelect"></select>
+	</div>
 
-	<select id="keySelect">
-	  <option value="C">C</option>
-	  <option value="G">G</option>
-	  <option value="D">D</option>
-	  <option value="A">A</option>
-	  <option value="E">E</option>
-	  <option value="B">B</option>
-	  <option value="F#">F#</option>
-	  <option value="C#">C#</option>
-	  <option value="F">F</option>
-	  <option value="Bb">Bb</option>
-	  <option value="Eb">Eb</option>
-	  <option value="Ab">Ab</option>
-	  <option value="Db">Db</option>
-	  <option value="Gb">Gb</option>
-	</select><br/>
-
-	<label>
-	  <input type="radio" name="mode" value="major" checked class="modeRadio"> Major
-	</label>
-	<label>
-	  <input type="radio" name="mode" value="minor" class="modeRadio"> Minor
-	</label><br/>
-
-	<label>
-	  <input type="checkbox" id="showNotesCheckbox" checked/>
-	  Show chord notes?
-	</label><br/>
-
-	<label>
-	  <input type="checkbox" id="showFunctionsCheckbox" checked/>
-	  Show chord functions?
-	</label><br/>
-
-	<label>Level:
-	  <select id="levelSelect">
-            <option value="1">Level 1 (Scale notes in order)</option>
-            <option value="2">Level 2 (Scale notes random)</option>
-            <option value="3">Level 3 (Basic chords)</option>
-            <option value="4">Level 4 (Chords with note order)</option>
-            <option value="5">Level 5 (Root note in Base)</option>
-            <option value="6">Level 6 (Seventh chords)</option>
-            <option value="7">Level 7 (Diminished or augmented)</option>
-            <option value="8">Level 8 (Mixed classical harmony)</option>
+	<div class="formRow">
+	  <select id="keySelect">
+	    <option value="C">C</option>
+	    <option value="G">G</option>
+	    <option value="D">D</option>
+	    <option value="A">A</option>
+	    <option value="E">E</option>
+	    <option value="B">B</option>
+	    <option value="F#">F#</option>
+	    <option value="C#">C#</option>
+	    <option value="F">F</option>
+	    <option value="Bb">Bb</option>
+	    <option value="Eb">Eb</option>
+	    <option value="Ab">Ab</option>
+	    <option value="Db">Db</option>
+	    <option value="Gb">Gb</option>
 	  </select>
-	</label><br/>
+
+	  <label>
+	    <input type="radio" name="mode" value="major" checked class="modeRadio"> Major
+	  </label>
+	  <label>
+	    <input type="radio" name="mode" value="minor" class="modeRadio"> Minor
+	  </label>
+	</div>
+
+	<div class="formRow">
+	  <label>
+	    <input type="checkbox" id="showNotesCheckbox" checked/>
+	    Show chord notes?
+	  </label>
+	  <label>
+	    <input type="checkbox" id="showFunctionsCheckbox" checked/>
+	    Show chord functions?
+	  </label>
+	</div>
+
+	<div class="formRow">
+	  <label>Level:
+	    <select id="levelSelect">
+	      <optgroup label="Basics">
+	        <option value="1">Level 1 (Scale notes in order)</option>
+	        <option value="2">Level 2 (Scale notes random)</option>
+	        <option value="3">Level 3 (Basic chords)</option>
+	      </optgroup>
+	      <optgroup label="Advanced">
+	        <option value="4">Level 4 (Chords with note order)</option>
+	        <option value="5">Level 5 (Root note in Base)</option>
+	        <option value="6">Level 6 (Seventh chords)</option>
+	        <option value="7">Level 7 (Diminished or augmented)</option>
+	        <option value="8">Level 8 (Mixed classical harmony)</option>
+	      </optgroup>
+	    </select>
+	  </label>
+	</div>
 
 	<button id="startButton">Start Game</button>
       </div>
