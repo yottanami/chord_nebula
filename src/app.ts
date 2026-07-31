@@ -1024,13 +1024,6 @@ if (closePopupButton) {
 
 window.addEventListener('load', showPopup);
 
-function displayErrorMessage(message: string) {
-    const errorMessageDiv = document.getElementById("error-message");
-    if (errorMessageDiv) {
-        errorMessageDiv.textContent = message;
-    }
-}
-
 const startButton= document.getElementById('startButton');
 if(startButton) startButton.addEventListener('click', startGame);
 
