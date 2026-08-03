@@ -16,63 +16,110 @@
     <link rel="stylesheet" href="style.css"/>
   </head>
   <body>
-    <div id="popupOverlay" class="popup-overlay">
-      <div class="popup-content">
-	<p>
-	  <b>Welcome to Chord Nebula!</b><br/>
-	  <div id="popupText">
-            Thank you for checking out this game. The idea behind this game is to help you learn piano chords and master common chord progressions across various keys using a MIDI device.
-            Whether you're a beginner piano or keyboard player looking to understand how to connect chords or someone who enjoys playing different pieces, composing, or improvising, Chord Nebula is here to assist you.<br/>
-            To use this game, you'll need a MIDI keyboard. Some mobile applications also allow you to use your phone as a virtual MIDI keyboard.<br/>
-            Please note that Chord Nebula is still under development, and you might encounter some issues. Your recent support and feedback have given me the motivation and enthusiasm to continue expanding this software, and I will be working on improvements soon. To stay updated on any new releases or changes, please join our mailing list.<br/>
-            <div id="mc_embed_shell">
-              <div id="mc_embed_signup">
-		<form action="https://gmail.us12.list-manage.com/subscribe/post?u=dbac6b06b60933a95d0f29059&amp;id=2f2038381e&amp;f_id=009b0ee9f0" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank">
-		  <div class="mc-field-group">
-                    <label for="mce-EMAIL">Email Address <span class="asterisk">*</span></label>
-                    <input type="email" name="EMAIL" class="required email" id="mce-EMAIL" required="" value=""/>
-                    <input type="submit" name="subscribe" id="mc-embedded-subscribe" class="button" value="Subscribe"/>
-		  </div>
-		  <div id="mce-responses" class="clear foot">
-                    <div class="response" id="mce-error-response" style="display: none;"></div>
-                    <div class="response" id="mce-success-response" style="display: none;"></div>
-		  </div>
-		  <div aria-hidden="true" style="position: absolute; left: -5000px;">
-                    <input type="text" name="b_dbac6b06b60933a95d0f29059_2f2038381e" tabindex="-1" value=""/>
-		  </div>
-		  <div class="optionalParent">
-                    <div class="clear foot"></div>
-		  </div>
-		</form>
-              </div>
-            </div>
-            <script type="text/javascript" src="//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js"></script>
-            <script type="text/javascript">
-              (function($) {
-		window.fnames = new Array();
-		window.ftypes = new Array();
-		fnames[0]='EMAIL'; ftypes[0]='email';
-		fnames[1]='FNAME'; ftypes[1]='text';
-		fnames[2]='LNAME'; ftypes[2]='text';
-		fnames[3]='ADDRESS'; ftypes[3]='address';
-		fnames[4]='PHONE'; ftypes[4]='phone';
-		fnames[5]='BIRTHDAY'; ftypes[5]='birthday';
-		fnames[6]='COMPANY'; ftypes[6]='text';
-              }(jQuery));
-              var $mcj = jQuery.noConflict(true);
-            </script>
-            <br/>
-            You can access the project source through the link below. If you encounter any problems or have suggestions, please let me know. Additionally, starring the repository on GitHub will encourage me to keep developing this project.<br/>
-            <a href="https://github.com/yottanami/chord_nebula">https://github.com/yottanami/chord_nebula</a>
-            <br/><br/>
-            Thank you!
-	  </div>
-	</p>
-	<button id="closePopupButton" class="button">Let's Go!</button>
+    <div id="mainMenuScreen" class="screen active">
+      <div class="menuContainer">
+        <h1>Chord Nebula</h1>
+        <p>Learn piano chords and chord progressions with a MIDI keyboard.</p>
+        <nav id="menuNav">
+          <button class="menuItem" id="menuStartButton">Start Game</button>
+          <button class="menuItem" id="menuHowToPlayButton">How to Play</button>
+          <button class="menuItem" id="menuAboutButton">About</button>
+          <button class="menuItem" id="menuSubscribeButton">Subscribe</button>
+          <button class="menuItem" id="menuOptionsButton">Options</button>
+        </nav>
       </div>
     </div>
 
-    <div id="setupScreen" class="active">
+    <div id="howToPlayScreen" class="screen">
+      <div class="menuContainer">
+        <h2>How to Play</h2>
+        <div class="menuBody">
+          <p>Connect a MIDI keyboard (or a MIDI-capable app on your phone), then pick your key and level from the setup screen.</p>
+          <p>Notes and chords fall from the top of the play area. Play the note or chord shown &mdash; all its notes at once, on your MIDI keyboard &mdash; before it reaches the bottom.</p>
+          <p>Match it in time and it pops; let it fall past the bottom and you lose a life. Run out of lives and the game ends.</p>
+          <p>Levels 1-3 are free and cover scale notes and basic chords. Levels 4-8 add note ordering, root-in-bass voicings, seventh chords, and more &mdash; unlock them with a one-time purchase from the setup screen.</p>
+        </div>
+        <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
+      </div>
+    </div>
+
+    <div id="aboutScreen" class="screen">
+      <div class="menuContainer">
+        <h2>About</h2>
+        <div class="menuBody">
+          <p>
+            Thank you for checking out this game. The idea behind this game is to help you learn piano chords and master common chord progressions across various keys using a MIDI device.
+            Whether you're a beginner piano or keyboard player looking to understand how to connect chords or someone who enjoys playing different pieces, composing, or improvising, Chord Nebula is here to assist you.
+          </p>
+          <p>
+            Please note that Chord Nebula is still under development, and you might encounter some issues. Your recent support and feedback have given me the motivation and enthusiasm to continue expanding this software, and I will be working on improvements soon.
+          </p>
+          <p>
+            You can access the project source through the link below. If you encounter any problems or have suggestions, please let me know. Additionally, starring the repository on GitHub will encourage me to keep developing this project.<br/>
+            <a href="https://github.com/yottanami/chord_nebula">https://github.com/yottanami/chord_nebula</a>
+          </p>
+        </div>
+        <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
+      </div>
+    </div>
+
+    <div id="subscribeScreen" class="screen">
+      <div class="menuContainer">
+        <h2>Subscribe</h2>
+        <div class="menuBody">
+          <p>Join the mailing list to stay updated on new releases and changes.</p>
+          <div id="mc_embed_shell">
+            <div id="mc_embed_signup">
+              <form action="https://gmail.us12.list-manage.com/subscribe/post?u=dbac6b06b60933a95d0f29059&amp;id=2f2038381e&amp;f_id=009b0ee9f0" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank">
+                <div class="mc-field-group">
+                  <label for="mce-EMAIL">Email Address <span class="asterisk">*</span></label>
+                  <input type="email" name="EMAIL" class="required email" id="mce-EMAIL" required="" value=""/>
+                  <input type="submit" name="subscribe" id="mc-embedded-subscribe" class="button" value="Subscribe"/>
+                </div>
+                <div id="mce-responses" class="clear foot">
+                  <div class="response" id="mce-error-response" style="display: none;"></div>
+                  <div class="response" id="mce-success-response" style="display: none;"></div>
+                </div>
+                <div aria-hidden="true" style="position: absolute; left: -5000px;">
+                  <input type="text" name="b_dbac6b06b60933a95d0f29059_2f2038381e" tabindex="-1" value=""/>
+                </div>
+                <div class="optionalParent">
+                  <div class="clear foot"></div>
+                </div>
+              </form>
+            </div>
+          </div>
+          <script type="text/javascript" src="//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js"></script>
+          <script type="text/javascript">
+            (function($) {
+              window.fnames = new Array();
+              window.ftypes = new Array();
+              fnames[0]='EMAIL'; ftypes[0]='email';
+              fnames[1]='FNAME'; ftypes[1]='text';
+              fnames[2]='LNAME'; ftypes[2]='text';
+              fnames[3]='ADDRESS'; ftypes[3]='address';
+              fnames[4]='PHONE'; ftypes[4]='phone';
+              fnames[5]='BIRTHDAY'; ftypes[5]='birthday';
+              fnames[6]='COMPANY'; ftypes[6]='text';
+            }(jQuery));
+            var $mcj = jQuery.noConflict(true);
+          </script>
+        </div>
+        <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
+      </div>
+    </div>
+
+    <div id="optionsScreen" class="screen">
+      <div class="menuContainer">
+        <h2>Options</h2>
+        <div class="menuBody">
+          <p>Nothing to configure here yet &mdash; check back in a future update.</p>
+        </div>
+        <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
+      </div>
+    </div>
+
+    <div id="setupScreen" class="screen">
       <div id="setupContainer">
 	<h1>Chord Nebula</h1>
 	<p>Learn and practice piano chords and common chord progressions in both major and minor keys!</p>
@@ -149,17 +196,18 @@
 	<p id="unlockedMessage" style="display:none;">Levels 4-8 unlocked. Thanks for buying!</p>
 
 	<button id="startButton">Start Game</button>
+	<button id="setupBackButton" class="menuItem backButton" data-back-to="mainMenuScreen">Back to Menu</button>
       </div>
     </div>
 
-    <div id="gameScreen">
+    <div id="gameScreen" class="screen">
       <h2>Chord Nebula</h2>
       <div id="scoreDisplay">Score: 0</div>
       <div id="livesDisplay">Lives: 3</div>
       <div id="gameArea"></div>
     </div>
 
-    <div id="endScreen">
+    <div id="endScreen" class="screen">
       <h2>Game Over</h2>
       <div id="finalScore"></div>
       <button id="restartButton">Restart</button>

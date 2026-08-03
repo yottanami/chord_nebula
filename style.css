@@ -22,17 +22,20 @@ h1, h2, #startButton, #restartButton, #scoreDisplay, #livesDisplay, .chordCircle
   font-family: 'Press Start 2P', cursive;
 }
 
-#setupScreen, #gameScreen, #endScreen {
+.screen {
   display: none;
   text-align: center;
   padding: 20px;
 }
 
-#setupScreen.active, #gameScreen.active, #endScreen.active {
+.screen.active {
   display: block;
 }
 
-#setupContainer {
+/* Shared retro "frame" panel look for the menu screens -- swappable for
+   real bordered-panel art (v2b) without touching markup/JS, since it's
+   keyed off this one class. */
+#setupContainer, .menuContainer {
   background: rgba(10, 8, 20, 0.78);
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 14px;
@@ -42,6 +45,58 @@ h1, h2, #startButton, #restartButton, #scoreDisplay, #livesDisplay, .chordCircle
   margin-top: 80px;
   max-width: 480px;
   box-shadow: 0 0 40px rgba(138, 92, 255, 0.25);
+}
+
+#menuNav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.menuBody {
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.9;
+  margin: 8px 0 20px;
+}
+
+.menuItem {
+  padding: 14px 28px;
+  font-size: 13px;
+  font-family: 'Press Start 2P', cursive;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), #5b3bb0);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(138, 92, 255, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.menuItem:hover, .menuItem:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(138, 92, 255, 0.55);
+  outline: none;
+}
+
+.menuItem:active {
+  transform: translateY(0);
+}
+
+.menuItem.backButton {
+  margin-top: 24px;
+  background: rgba(255,255,255,0.08);
+  box-shadow: none;
+}
+
+.menuItem.backButton:hover, .menuItem.backButton:focus-visible {
+  box-shadow: 0 4px 14px rgba(138, 92, 255, 0.3);
+}
+
+#mc_embed_shell {
+  margin: 20px 0;
 }
 
 h1 {
@@ -207,46 +262,6 @@ h1 {
   font-family: 'Inter', sans-serif;
 }
 
-.popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  visibility: hidden;
-  opacity: 0;
-  transition: visibility 0s, opacity 0.3s ease-in-out;
-}
-
-.popup-overlay.active {
-  visibility: visible;
-  opacity: 1;
-}
-
-.popup-content {
-  background-color: #fff;
-  color: #000;
-  padding: 20px 30px;
-  border-radius: 10px;
-  text-align: center;
-  max-width: 85%;
-  max-height: 85%;
-  overflow-y: auto;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  font-family: 'Inter', 'arial', sans-serif;
-  line-height: 1.5;
-}
-
-#popupText {
-    margin-bottom: 20px;
-    text-align: left;
-}
-
 .button {
   margin-top: 15px;
   padding: 10px 20px;
@@ -256,9 +271,5 @@ h1 {
   color: #fff;
   border: none;
   border-radius: 5px;
-}
-
-#closePopupButton:hover {
-  background-color: #666;
 }
 
