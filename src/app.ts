@@ -995,17 +995,11 @@ async function refreshUnlockUI():Promise<void> {
   if(purchaseLink) purchaseLink.href= GUMROAD_PRODUCT_URL;
 }
 
-function showPopup(): void {
-  if (popupOverlay) {
-    popupOverlay.classList.add('active');
-  }
-}
-
-
-function hidePopup(): void {
-  if (popupOverlay) {
-    popupOverlay.classList.remove('active');
-  }
+/** Shows the screen with ID `id`, hiding every other `.screen` element. */
+function showScreen(id: string): void {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  let target= document.getElementById(id);
+  if(target) target.classList.add('active');
 }
 
 // --- Pure logic ends here; DOM/browser wiring runs immediately below ---
@@ -1015,14 +1009,41 @@ function hidePopup(): void {
 // or above this line may execute top-level code that touches document/
 // window/navigator, or the test loader breaks.)
 
-const popupOverlay= document.getElementById('popupOverlay');
-const closePopupButton= document.getElementById('closePopupButton');
-
-if (closePopupButton) {
-  closePopupButton.addEventListener('click', hidePopup);
+const menuButtonTargets: {[buttonId:string]:string} = {
+  menuStartButton: 'setupScreen',
+  menuHowToPlayButton: 'howToPlayScreen',
+  menuAboutButton: 'aboutScreen',
+  menuSubscribeButton: 'subscribeScreen',
+  menuOptionsButton: 'optionsScreen'
+};
+for(let buttonId in menuButtonTargets){
+  let button= document.getElementById(buttonId);
+  let targetId= menuButtonTargets[buttonId];
+  if(button) button.addEventListener('click', ()=> showScreen(targetId));
 }
 
-window.addEventListener('load', showPopup);
+document.querySelectorAll('.backButton').forEach(button=>{
+  let targetId= (button as HTMLElement).dataset.backTo|| 'mainMenuScreen';
+  button.addEventListener('click', ()=> showScreen(targetId));
+});
+
+// Arrow-key navigation between menu buttons -- Tab/Enter/Space already
+// work via native <button> focus semantics, this just adds the arcade-y
+// up/down cycling on top of that (mouse/touch works regardless).
+const menuNav= document.getElementById('menuNav');
+if(menuNav){
+  let menuButtons= Array.from(menuNav.querySelectorAll('button')) as HTMLButtonElement[];
+  menuNav.addEventListener('keydown', (e:KeyboardEvent)=>{
+    let idx= menuButtons.indexOf(document.activeElement as HTMLButtonElement);
+    if(e.key==='ArrowDown'){
+      e.preventDefault();
+      menuButtons[(idx+1+menuButtons.length)% menuButtons.length]?.focus();
+    } else if(e.key==='ArrowUp'){
+      e.preventDefault();
+      menuButtons[(idx-1+menuButtons.length)% menuButtons.length]?.focus();
+    }
+  });
+}
 
 const startButton= document.getElementById('startButton');
 if(startButton) startButton.addEventListener('click', startGame);

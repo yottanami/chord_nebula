@@ -954,15 +954,12 @@ function refreshUnlockUI() {
             purchaseLink.href = GUMROAD_PRODUCT_URL;
     });
 }
-function showPopup() {
-    if (popupOverlay) {
-        popupOverlay.classList.add('active');
-    }
-}
-function hidePopup() {
-    if (popupOverlay) {
-        popupOverlay.classList.remove('active');
-    }
+/** Shows the screen with ID `id`, hiding every other `.screen` element. */
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    let target = document.getElementById(id);
+    if (target)
+        target.classList.add('active');
 }
 // --- Pure logic ends here; DOM/browser wiring runs immediately below ---
 // (test/support/loadApp.ts slices the file at this exact comment to load
@@ -970,12 +967,42 @@ function hidePopup() {
 // functions like matchesLevel4/getChordSpecForLevel directly. Nothing at
 // or above this line may execute top-level code that touches document/
 // window/navigator, or the test loader breaks.)
-const popupOverlay = document.getElementById('popupOverlay');
-const closePopupButton = document.getElementById('closePopupButton');
-if (closePopupButton) {
-    closePopupButton.addEventListener('click', hidePopup);
+const menuButtonTargets = {
+    menuStartButton: 'setupScreen',
+    menuHowToPlayButton: 'howToPlayScreen',
+    menuAboutButton: 'aboutScreen',
+    menuSubscribeButton: 'subscribeScreen',
+    menuOptionsButton: 'optionsScreen'
+};
+for (let buttonId in menuButtonTargets) {
+    let button = document.getElementById(buttonId);
+    let targetId = menuButtonTargets[buttonId];
+    if (button)
+        button.addEventListener('click', () => showScreen(targetId));
 }
-window.addEventListener('load', showPopup);
+document.querySelectorAll('.backButton').forEach(button => {
+    let targetId = button.dataset.backTo || 'mainMenuScreen';
+    button.addEventListener('click', () => showScreen(targetId));
+});
+// Arrow-key navigation between menu buttons -- Tab/Enter/Space already
+// work via native <button> focus semantics, this just adds the arcade-y
+// up/down cycling on top of that (mouse/touch works regardless).
+const menuNav = document.getElementById('menuNav');
+if (menuNav) {
+    let menuButtons = Array.from(menuNav.querySelectorAll('button'));
+    menuNav.addEventListener('keydown', (e) => {
+        var _a, _b;
+        let idx = menuButtons.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            (_a = menuButtons[(idx + 1 + menuButtons.length) % menuButtons.length]) === null || _a === void 0 ? void 0 : _a.focus();
+        }
+        else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            (_b = menuButtons[(idx - 1 + menuButtons.length) % menuButtons.length]) === null || _b === void 0 ? void 0 : _b.focus();
+        }
+    });
+}
 const startButton = document.getElementById('startButton');
 if (startButton)
     startButton.addEventListener('click', startGame);
