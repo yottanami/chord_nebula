@@ -631,7 +631,7 @@ function noteNameToMidi(noteName:string, octave:number=2):number {
   return octave*12 + i;
 }
 
-function createBassForLevel5(baseChord:string[], chordAsc:string[]):string {
+function createBassForLevel5(baseChord:string[]):string {
   let root= baseChord[0];
   let bassMidi= noteNameToMidi(root,2);
   if(bassMidi<0) bassMidi=0;
@@ -674,7 +674,7 @@ function generateChordCircle():void {
 
   let finalChord= chordAsc;
   if(selectedLevel===5){
-    let bass= createBassForLevel5(baseChord, chordAsc);
+    let bass= createBassForLevel5(baseChord);
     finalChord= [bass, ...chordAsc];
   }
 

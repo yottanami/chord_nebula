@@ -592,7 +592,7 @@ function noteNameToMidi(noteName, octave = 2) {
         i = 0;
     return octave * 12 + i;
 }
-function createBassForLevel5(baseChord, chordAsc) {
+function createBassForLevel5(baseChord) {
     let root = baseChord[0];
     let bassMidi = noteNameToMidi(root, 2);
     if (bassMidi < 0)
@@ -631,7 +631,7 @@ function generateChordCircle() {
     let chordLabel = getChordFullName(chosenKey, chordDegree, baseChord, invertedChord, chordSpec.quality);
     let finalChord = chordAsc;
     if (selectedLevel === 5) {
-        let bass = createBassForLevel5(baseChord, chordAsc);
+        let bass = createBassForLevel5(baseChord);
         finalChord = [bass, ...chordAsc];
     }
     let displayChord;
