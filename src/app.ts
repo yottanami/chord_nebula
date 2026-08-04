@@ -32,6 +32,8 @@ let lastFrameTime: number = 0;
 let activeOscillators: { [key: number]: { osc: OscillatorNode; gain: GainNode } } = {};
 let selectedLevel: number = 4;
 let circleSpawnCount: number = 0;
+let gameMode: "auto" | "custom" = "custom";
+let autoModeUnlocked: boolean = false;
 
 type ChordQuality =
   | "maj"
@@ -697,8 +699,6 @@ function generateChordCircle():void {
   }
   htmlContent+= `<div>${chordLabel}</div>`;
 
-  if(score>5) showNotes= false;
-
   if(showNotes){
     htmlContent+= `<div>${displayChord.join("-")}</div>`;
   }
@@ -723,7 +723,41 @@ function generateChordCircle():void {
   });
 }
 
+type AutoStage = {
+  minScore: number;
+  level: number;
+  showNotes: boolean;
+  showFunctions: boolean;
+};
+
+// First-pass difficulty ramp for Auto mode -- deliberately simple, tunable
+// constants (hide names, then functions, then step up chord complexity).
+// Not a final spec: expect an adjustment round after owner playtesting.
+const AUTO_RAMP: AutoStage[] = [
+  { minScore: 0,  level: 3, showNotes: true,  showFunctions: true  },
+  { minScore: 6,  level: 4, showNotes: false, showFunctions: true  },
+  { minScore: 14, level: 6, showNotes: false, showFunctions: false },
+  { minScore: 24, level: 7, showNotes: false, showFunctions: false },
+];
+
+/**
+ * Applies the Auto-mode ramp for the current score: picks the highest
+ * stage whose minScore has been reached and sets selectedLevel/showNotes/
+ * showFunctions from it. Stage levels are clamped by the paid unlock --
+ * Auto never advances into a locked level even as the ramp progresses.
+ */
+function applyAutoRamp():void {
+  let stage= AUTO_RAMP[0];
+  for(let s of AUTO_RAMP){
+    if(score>= s.minScore) stage= s;
+  }
+  selectedLevel= isLevelAllowed(stage.level, autoModeUnlocked)? stage.level: FREE_LEVEL_MAX;
+  showNotes= stage.showNotes;
+  showFunctions= stage.showFunctions;
+}
+
 function generateCircleByLevel():void {
+  if(gameMode==='auto') applyAutoRamp();
   if(selectedLevel===1|| selectedLevel===2){
     generateNoteCircle();
   } else {
@@ -799,25 +833,32 @@ async function startGame():Promise<void> {
 
   circleSpawnCount= 0;
 
-  if(levelSelect){
-    selectedLevel= parseInt(levelSelect.value,10);
-    if(isNaN(selectedLevel)|| selectedLevel<1|| selectedLevel>8){
+  if(gameMode==='auto'){
+    autoModeUnlocked= await isUnlocked();
+    // selectedLevel/showNotes/showFunctions are seeded for score=0 below,
+    // once score itself has been reset -- applyAutoRamp() reads score.
+  } else {
+    if(levelSelect){
+      selectedLevel= parseInt(levelSelect.value,10);
+      if(isNaN(selectedLevel)|| selectedLevel<1|| selectedLevel>8){
+        selectedLevel=4;
+      }
+    } else {
       selectedLevel=4;
     }
-  } else {
-    selectedLevel=4;
+
+    // Real enforcement point -- disabling the <option> elements (see
+    // refreshUnlockUI) is only a UI nicety, not what actually stops a
+    // locked level from starting.
+    if(!isLevelAllowed(selectedLevel, await isUnlocked())){
+      alert("Level "+selectedLevel+" needs the paid unlock. Levels 1-3 are free -- see the unlock section to buy or enter a license key.");
+      return;
+    }
+
+    if(notesCheck) showNotes= notesCheck.checked;
+    if(functionsCheck) showFunctions= functionsCheck.checked;
   }
 
-  // Real enforcement point -- disabling the <option> elements (see
-  // refreshUnlockUI) is only a UI nicety, not what actually stops a
-  // locked level from starting.
-  if(!isLevelAllowed(selectedLevel, await isUnlocked())){
-    alert("Level "+selectedLevel+" needs the paid unlock. Levels 1-3 are free -- see the unlock section to buy or enter a license key.");
-    return;
-  }
-
-  if(notesCheck) showNotes= notesCheck.checked;
-  if(functionsCheck) showFunctions= functionsCheck.checked;
   if(keySel) chosenKey= keySel.value;
 
   if(!isValidMidiInput(midi?.options)){
@@ -839,6 +880,8 @@ async function startGame():Promise<void> {
   lives=3;
   updateScore();
   updateLives();
+
+  if(gameMode==='auto') applyAutoRamp();
 
   if(setupScreen) setupScreen.classList.remove('active');
   if(gameScreen) gameScreen.classList.add('active');
@@ -1010,7 +1053,7 @@ function showScreen(id: string): void {
 // window/navigator, or the test loader breaks.)
 
 const menuButtonTargets: {[buttonId:string]:string} = {
-  menuStartButton: 'setupScreen',
+  menuStartButton: 'modeSelectScreen',
   menuHowToPlayButton: 'howToPlayScreen',
   menuAboutButton: 'aboutScreen',
   menuSubscribeButton: 'subscribeScreen',
@@ -1027,23 +1070,49 @@ document.querySelectorAll('.backButton').forEach(button=>{
   button.addEventListener('click', ()=> showScreen(targetId));
 });
 
-// Arrow-key navigation between menu buttons -- Tab/Enter/Space already
-// work via native <button> focus semantics, this just adds the arcade-y
-// up/down cycling on top of that (mouse/touch works regardless).
-const menuNav= document.getElementById('menuNav');
-if(menuNav){
-  let menuButtons= Array.from(menuNav.querySelectorAll('button')) as HTMLButtonElement[];
-  menuNav.addEventListener('keydown', (e:KeyboardEvent)=>{
-    let idx= menuButtons.indexOf(document.activeElement as HTMLButtonElement);
-    if(e.key==='ArrowDown'){
+// Arrow-key navigation between the buttons of whichever nav is showing --
+// Tab/Enter/Space already work via native <button> focus semantics, this
+// just adds the arcade-y up/down cycling on top of that (mouse/touch
+// works regardless).
+document.querySelectorAll('.screenNav').forEach(nav=>{
+  let navButtons= Array.from(nav.querySelectorAll('button')) as HTMLButtonElement[];
+  nav.addEventListener('keydown', (e)=>{
+    let key= (e as KeyboardEvent).key;
+    let idx= navButtons.indexOf(document.activeElement as HTMLButtonElement);
+    if(key==='ArrowDown'){
       e.preventDefault();
-      menuButtons[(idx+1+menuButtons.length)% menuButtons.length]?.focus();
-    } else if(e.key==='ArrowUp'){
+      navButtons[(idx+1+navButtons.length)% navButtons.length]?.focus();
+    } else if(key==='ArrowUp'){
       e.preventDefault();
-      menuButtons[(idx-1+menuButtons.length)% menuButtons.length]?.focus();
+      navButtons[(idx-1+navButtons.length)% navButtons.length]?.focus();
     }
   });
+});
+
+/** Shows/hides the setup screen's manual-only controls (level, show
+ * notes/functions checkboxes) depending on the chosen game mode -- Auto
+ * manages those itself via the difficulty ramp. */
+function setSetupScreenForMode(mode: "auto"|"custom"): void {
+  let manualOptionsRow= document.getElementById('manualOptionsRow');
+  let levelRow= document.getElementById('levelRow');
+  let display= mode==='custom'? '': 'none';
+  if(manualOptionsRow) manualOptionsRow.style.display= display;
+  if(levelRow) levelRow.style.display= display;
 }
+
+const modeAutoButton= document.getElementById('modeAutoButton');
+if(modeAutoButton) modeAutoButton.addEventListener('click', ()=>{
+  gameMode= 'auto';
+  setSetupScreenForMode('auto');
+  showScreen('setupScreen');
+});
+
+const modeCustomButton= document.getElementById('modeCustomButton');
+if(modeCustomButton) modeCustomButton.addEventListener('click', ()=>{
+  gameMode= 'custom';
+  setSetupScreenForMode('custom');
+  showScreen('setupScreen');
+});
 
 const startButton= document.getElementById('startButton');
 if(startButton) startButton.addEventListener('click', startGame);
