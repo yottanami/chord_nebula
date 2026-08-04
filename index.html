@@ -20,13 +20,28 @@
       <div class="menuContainer">
         <h1>Chord Nebula</h1>
         <p>Learn piano chords and chord progressions with a MIDI keyboard.</p>
-        <nav id="menuNav">
+        <nav class="screenNav">
           <button class="menuItem" id="menuStartButton">Start Game</button>
           <button class="menuItem" id="menuHowToPlayButton">How to Play</button>
           <button class="menuItem" id="menuAboutButton">About</button>
           <button class="menuItem" id="menuSubscribeButton">Subscribe</button>
           <button class="menuItem" id="menuOptionsButton">Options</button>
         </nav>
+      </div>
+    </div>
+
+    <div id="modeSelectScreen" class="screen">
+      <div class="menuContainer">
+        <h2>Start Game</h2>
+        <div class="menuBody">
+          <p><b>Auto</b> &mdash; guided campaign. Starts easy with note names and chord functions visible, then ramps up automatically as you score.</p>
+          <p><b>Custom</b> &mdash; pick your own key, level, and what's shown, same as before.</p>
+        </div>
+        <nav class="screenNav">
+          <button class="menuItem" id="modeAutoButton">Auto</button>
+          <button class="menuItem" id="modeCustomButton">Custom</button>
+        </nav>
+        <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
       </div>
     </div>
 
@@ -155,7 +170,7 @@
 	  </label>
 	</div>
 
-	<div class="formRow">
+	<div id="manualOptionsRow" class="formRow">
 	  <label>
 	    <input type="checkbox" id="showNotesCheckbox" checked/>
 	    Show chord notes?
@@ -166,7 +181,7 @@
 	  </label>
 	</div>
 
-	<div class="formRow">
+	<div id="levelRow" class="formRow">
 	  <label>Level:
 	    <select id="levelSelect">
 	      <optgroup label="Basics">

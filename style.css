@@ -47,7 +47,7 @@ h1, h2, #startButton, #restartButton, #scoreDisplay, #livesDisplay, .chordCircle
   box-shadow: 0 0 40px rgba(138, 92, 255, 0.25);
 }
 
-#menuNav {
+.screenNav {
   display: flex;
   flex-direction: column;
   gap: 14px;
