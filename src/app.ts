@@ -359,6 +359,117 @@ function playMissSound():void {
   setTimeout(()=> osc.stop(), 220);
 }
 
+// --- Engine pulse ---------------------------------------------------
+// A chiptune bass ostinato ("ba ba ba ba") that runs while objects are
+// falling, so the play area feels like something slowly under way rather
+// than silent between chords.
+//
+// It has to sit *under* playChordSound without ever fighting it, which is
+// what every constant here is chosen for:
+//   * Register. Pulses live at MIDI 36-59 (65-247Hz). playChordSound's
+//     triangles sit in the C4-B4 octave (261-494Hz), so the two never
+//     overlap in pitch.
+//   * Harmony. The pattern is keyed off the current tonic and uses only
+//     the root, its octave and its fifth, so it works as a pedal tone
+//     under any chord the level can generate instead of clashing with
+//     some of them.
+//   * Level. Peak gain is 0.06 against the chords' 0.3, and the lowpass
+//     tames the square wave's upper harmonics -- keeping the 8-bit
+//     character while leaving the midrange clear for the chords.
+const ENGINE_STEP_SECONDS = 0.42;
+const ENGINE_PEAK_GAIN = 0.06;
+/** Semitone offsets from the tonic -- root, root, octave, fifth. */
+const ENGINE_PATTERN = [0, 0, 12, 7];
+/** How far ahead of the audio clock pulses get scheduled. */
+const ENGINE_SCHEDULE_AHEAD = 0.3;
+
+let engineInput: BiquadFilterNode | null = null;
+let engineTimer: number | null = null;
+let engineNextStepTime: number = 0;
+let engineStep: number = 0;
+
+/** Tonic of the current key, two octaves below middle C. */
+function engineRootMidi():number {
+  let pc= noteNames.indexOf(toSharpName(chosenKey));
+  return 36+ (pc<0? 0: pc);
+}
+
+function ensureEngineChain():BiquadFilterNode {
+  let ctx= audioContext!;
+  if(!engineInput){
+    let filter= ctx.createBiquadFilter();
+    filter.type= 'lowpass';
+    filter.frequency.setValueAtTime(900, ctx.currentTime);
+    let bus= ctx.createGain();
+    bus.gain.setValueAtTime(1, ctx.currentTime);
+    filter.connect(bus).connect(ctx.destination);
+    engineInput= filter;
+  }
+  return engineInput;
+}
+
+/** One short square-wave "ba", scheduled at audio-clock time `at`. */
+function playEnginePulse(at:number, midi:number):void {
+  let ctx= audioContext!;
+  let dest= ensureEngineChain();
+  let osc= ctx.createOscillator();
+  osc.type= 'square';
+  osc.frequency.setValueAtTime(freqFromMidiNote(midi), at);
+  let gainNode= ctx.createGain();
+  // Fast attack into a short decay: staccato, so the pulses read as
+  // separate hits rather than one continuous hum.
+  gainNode.gain.setValueAtTime(0.0001, at);
+  gainNode.gain.linearRampToValueAtTime(ENGINE_PEAK_GAIN, at+0.015);
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, at+0.19);
+  osc.connect(gainNode).connect(dest);
+  osc.start(at);
+  osc.stop(at+0.22);
+}
+
+/** Lookahead scheduler: setInterval alone is too jittery to keep a beat. */
+function scheduleEnginePulses():void {
+  let ctx= audioContext!;
+  // gameLoop (and so syncEngineDrone) is driven by rAF, which pauses while
+  // the tab is hidden -- without this the scheduler would keep firing
+  // pulses into a tab nobody is looking at.
+  if(typeof document!=='undefined' && document.hidden){
+    engineNextStepTime= ctx.currentTime;
+    return;
+  }
+  let root= engineRootMidi();
+  while(engineNextStepTime< ctx.currentTime+ ENGINE_SCHEDULE_AHEAD){
+    let offset= ENGINE_PATTERN[engineStep% ENGINE_PATTERN.length];
+    playEnginePulse(Math.max(engineNextStepTime, ctx.currentTime), root+ offset);
+    engineStep++;
+    engineNextStepTime+= ENGINE_STEP_SECONDS;
+  }
+}
+
+function startEngineDrone():void {
+  if(engineTimer!==null) return;
+  // No-op under the test sandbox / any environment without Web Audio.
+  if(typeof AudioContext==='undefined') return;
+  ensureAudioContext();
+  engineStep= 0;
+  engineNextStepTime= audioContext!.currentTime+ 0.05;
+  scheduleEnginePulses();
+  engineTimer= setInterval(scheduleEnginePulses, 120);
+}
+
+function stopEngineDrone():void {
+  if(engineTimer===null) return;
+  clearInterval(engineTimer);
+  engineTimer= null;
+  // Pulses already scheduled (< ENGINE_SCHEDULE_AHEAD away) are left to
+  // ring out on their own envelopes rather than being cut off.
+}
+
+/** Runs the pulse whenever at least one circle is still falling. */
+function syncEngineDrone():void {
+  let anyFalling= gameRunning && circles.some(c=> !c.destroyed);
+  if(anyFalling) startEngineDrone(); else stopEngineDrone();
+}
+
 // Reference frame interval (60fps) that circle speed values are tuned
 // against -- see updateCircles' deltaFactor.
 const REFERENCE_FRAME_MS = 1000/60;
@@ -810,6 +921,7 @@ function updateCircles(deltaMs:number):void {
 
 function updateCirclesAndSpawn(timestamp:number, deltaMs:number):void {
   updateCircles(deltaMs);
+  syncEngineDrone();
   if(timestamp- lastSpawn> 3000){
     generateCircleByLevel();
     lastSpawn= timestamp;
@@ -832,6 +944,7 @@ function stopAllSounds():void {
     activeOscillators[note].osc.stop();
   }
   activeOscillators={};
+  stopEngineDrone();
 }
 
 async function startGame():Promise<void> {

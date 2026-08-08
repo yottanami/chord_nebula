@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 /* v2b palette: the placeholder purple is gone -- the delivered art pass
    (images/background.png, images/gameArea-bg.png, images/chord-orb.png)
@@ -14,6 +14,13 @@
   --panel-bg: rgba(0, 12, 7, 0.86);
   --ink: #d6ffe6;
   --miss: #ff4d4d;
+  /* Body copy is a terminal mono rather than a neutral sans: Inter read as
+     generic UI chrome bolted onto the HUD art. IBM Plex Mono keeps the
+     terminal/technical register the panels and score font establish while
+     still being designed for running text, which the pixel font and
+     Courier New both are not. Falls back to the same stack
+     matrix-panel.css uses. */
+  --font-body: 'IBM Plex Mono', 'Courier New', ui-monospace, monospace;
 }
 
 body {
@@ -31,9 +38,9 @@ body {
   background-attachment: fixed, fixed;
   /* "Press Start 2P" stays for headings/score/circles/buttons --
      the retro-arcade identity -- but body copy (labels, paragraphs) uses
-     a readable sans-serif; the pixel font at paragraph sizes was hard to
+     a readable mono; the pixel font at paragraph sizes was hard to
      read. */
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: var(--font-body);
   color: var(--ink);
 }
 
@@ -74,7 +81,7 @@ a:hover {
   width: min(92vw, 560px);
   margin: 80px auto 40px;
   text-align: center;
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: var(--font-body);
   color: var(--ink);
 }
 
@@ -92,7 +99,9 @@ a:hover {
 .menuBody {
   text-align: left;
   font-size: 14px;
-  line-height: 1.6;
+  /* A touch more leading than the old sans needed: mono glyphs are wider,
+     so lines run longer and want more air between them. */
+  line-height: 1.75;
   opacity: 0.9;
   margin: 8px 0 20px;
 }
@@ -172,7 +181,7 @@ h1 {
 
 #setupContainer > p {
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.75;
   opacity: 0.85;
   margin: 8px 0 20px;
 }
@@ -194,7 +203,7 @@ h1 {
 #midiSelect, #keySelect, #levelSelect, #licenseKeyInput, #mce-EMAIL {
   padding: 8px 10px;
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   background: #04140b;
   color: var(--ink);
   border: 1px solid rgba(0, 255, 102, 0.35);
@@ -363,7 +372,7 @@ h1 {
 #finalScore {
   font-size: 16px;
   margin-bottom: 20px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
 }
 
 /* Mailchimp's own class, kept for any of its markup that isn't the
