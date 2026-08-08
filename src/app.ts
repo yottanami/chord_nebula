@@ -291,7 +291,6 @@ function matchesLevel5(chordNotes:string[]):boolean {
     let bassMidi= playedAsc[0].midiNumber;
     let secondMidi= playedAsc[1].midiNumber;
     if(bassMidi> secondMidi) return false;
-//    if(secondMidi- bassMidi<12) return false;
   }
   return true;
 }

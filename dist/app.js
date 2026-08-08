@@ -265,7 +265,6 @@ function matchesLevel5(chordNotes) {
         let secondMidi = playedAsc[1].midiNumber;
         if (bassMidi > secondMidi)
             return false;
-        //    if(secondMidi- bassMidi<12) return false;
     }
     return true;
 }
