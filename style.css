@@ -1,25 +1,57 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap');
 
+/* v2b palette: the placeholder purple is gone -- the delivered art pass
+   (images/background.png, images/gameArea-bg.png, images/chord-orb.png)
+   is a green-on-black "matrix HUD" style, so the whole UI moves onto the
+   same greens that matrix-panel.css already declares. --miss stays red
+   on purpose: it's the one signal that must never read as "part of the
+   theme". */
 :root {
-  --accent: #8a5cff;
-  --accent-bright: #b18cff;
+  --accent: #00ff66;
+  --accent-bright: #7bffb4;
+  --accent-soft: #4dff9a;
+  --accent-dim: rgba(0, 255, 102, 0.20);
+  --panel-bg: rgba(0, 12, 7, 0.86);
+  --ink: #d6ffe6;
   --miss: #ff4d4d;
 }
 
 body {
   margin: 0;
-  background: #000 url('images/background.jpg') no-repeat center center fixed;
-  background-size: cover;
-  /* "Press Start 2P" stays for headings/score/lives/circles/buttons --
+  min-height: 100vh;
+  background-color: #010603;
+  /* Gradient layer sits *above* the art to sink the edges and keep the
+     panels legible over the busier corners of the background. */
+  background-image:
+    radial-gradient(ellipse at 50% 38%, rgba(0, 10, 5, 0.25), rgba(0, 6, 3, 0.80) 78%),
+    url('images/background.png');
+  background-repeat: no-repeat, no-repeat;
+  background-position: center center, center center;
+  background-size: cover, cover;
+  background-attachment: fixed, fixed;
+  /* "Press Start 2P" stays for headings/score/circles/buttons --
      the retro-arcade identity -- but body copy (labels, paragraphs) uses
      a readable sans-serif; the pixel font at paragraph sizes was hard to
      read. */
   font-family: 'Inter', -apple-system, sans-serif;
-  color: #fff;
+  color: var(--ink);
 }
 
-h1, h2, #startButton, #restartButton, #scoreDisplay, #livesDisplay, .chordCircle {
+h1, h2, #startButton, #restartButton, #scoreDisplay, .chordCircle {
   font-family: 'Press Start 2P', cursive;
+}
+
+h1, h2 {
+  color: var(--accent-bright);
+  text-shadow: 0 0 12px rgba(0, 255, 102, 0.45);
+}
+
+a {
+  color: var(--accent-soft);
+}
+
+a:hover {
+  color: var(--accent-bright);
 }
 
 .screen {
@@ -32,19 +64,22 @@ h1, h2, #startButton, #restartButton, #scoreDisplay, #livesDisplay, .chordCircle
   display: block;
 }
 
-/* Shared retro "frame" panel look for the menu screens -- swappable for
-   real bordered-panel art (v2b) without touching markup/JS, since it's
-   keyed off this one class. */
+/* --- Panels -------------------------------------------------------
+   The frame itself comes from matrix-panel.css. Everything below only
+   adapts that component to this app: matrix-panel--container is a
+   single-child flex row by default and 900px wide, neither of which
+   suits stacked menu content. */
 #setupContainer, .menuContainer {
-  background: rgba(10, 8, 20, 0.78);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 14px;
-  padding: 36px 40px;
-  display: inline-block;
+  flex-direction: column;
+  width: min(92vw, 560px);
+  margin: 80px auto 40px;
   text-align: center;
-  margin-top: 80px;
-  max-width: 480px;
-  box-shadow: 0 0 40px rgba(138, 92, 255, 0.25);
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: var(--ink);
+}
+
+#setupContainer {
+  width: min(92vw, 620px);
 }
 
 .screenNav {
@@ -62,37 +97,67 @@ h1, h2, #startButton, #restartButton, #scoreDisplay, #livesDisplay, .chordCircle
   margin: 8px 0 20px;
 }
 
-.menuItem {
+/* --- Buttons ------------------------------------------------------
+   Terminal-style: dark fill, green rule, green text, glow on hover --
+   a filled green slab fought the HUD art for attention. */
+.menuItem, #startButton, #restartButton, #unlockButton, #mc-embedded-subscribe {
   padding: 14px 28px;
   font-size: 13px;
   font-family: 'Press Start 2P', cursive;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--accent), #5b3bb0);
-  color: #fff;
-  border: none;
+  background: linear-gradient(180deg, rgba(0, 40, 20, 0.85), rgba(0, 18, 10, 0.9));
+  color: var(--accent-soft);
+  border: 2px solid rgba(0, 255, 102, 0.55);
   border-radius: 8px;
-  box-shadow: 0 4px 14px rgba(138, 92, 255, 0.4);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 8px rgba(0, 255, 102, 0.45);
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.15), inset 0 0 14px rgba(0, 255, 102, 0.07);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.menuItem:hover, .menuItem:focus-visible {
+.menuItem:hover, .menuItem:focus-visible,
+#startButton:hover, #startButton:focus-visible,
+#restartButton:hover, #restartButton:focus-visible,
+#unlockButton:hover, #unlockButton:focus-visible,
+#mc-embedded-subscribe:hover, #mc-embedded-subscribe:focus-visible {
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(138, 92, 255, 0.55);
+  color: #eaffe9;
+  border-color: var(--accent);
+  box-shadow: 0 0 22px rgba(0, 255, 102, 0.45), inset 0 0 20px rgba(0, 255, 102, 0.15);
   outline: none;
 }
 
-.menuItem:active {
+.menuItem:active, #startButton:active, #restartButton:active,
+#unlockButton:active, #mc-embedded-subscribe:active {
   transform: translateY(0);
+}
+
+/* Both sit inline next to a text input, so they take a compact size
+   rather than the full arcade-button padding above. */
+#unlockButton, #mc-embedded-subscribe {
+  padding: 9px 16px;
+  font-size: 10px;
+  vertical-align: middle;
+}
+
+#startButton, #restartButton {
+  font-size: 14px;
+  margin: 24px auto 4px;
+  display: inline-block;
+  text-decoration: none;
 }
 
 .menuItem.backButton {
   margin-top: 24px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(0, 255, 102, 0.05);
+  border-color: rgba(0, 255, 102, 0.28);
   box-shadow: none;
+  opacity: 0.85;
 }
 
 .menuItem.backButton:hover, .menuItem.backButton:focus-visible {
-  box-shadow: 0 4px 14px rgba(138, 92, 255, 0.3);
+  opacity: 1;
+  box-shadow: 0 0 16px rgba(0, 255, 102, 0.3);
 }
 
 #mc_embed_shell {
@@ -112,6 +177,7 @@ h1 {
   margin: 8px 0 20px;
 }
 
+/* --- Forms --------------------------------------------------------- */
 .formRow {
   display: flex;
   align-items: center;
@@ -125,19 +191,21 @@ h1 {
   font-size: 13px;
 }
 
-#midiSelect, #keySelect, #levelSelect {
+#midiSelect, #keySelect, #levelSelect, #licenseKeyInput, #mce-EMAIL {
   padding: 8px 10px;
   font-size: 13px;
   font-family: 'Inter', sans-serif;
-  background: #1a1626;
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.25);
+  background: #04140b;
+  color: var(--ink);
+  border: 1px solid rgba(0, 255, 102, 0.35);
   border-radius: 6px;
 }
 
-#midiSelect:focus, #keySelect:focus, #levelSelect:focus {
+#midiSelect:focus, #keySelect:focus, #levelSelect:focus,
+#licenseKeyInput:focus, #mce-EMAIL:focus {
   outline: none;
-  border-color: var(--accent-bright);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.35);
 }
 
 #levelSelect optgroup {
@@ -146,8 +214,8 @@ h1 {
 }
 
 #levelSelect option {
-  color: #fff;
-  background: #1a1626;
+  color: var(--ink);
+  background: #04140b;
 }
 
 #showNotesCheckbox, #showFunctionsCheckbox {
@@ -159,67 +227,89 @@ h1 {
   accent-color: var(--accent);
 }
 
-#startButton, #restartButton {
-  padding: 14px 28px;
-  font-size: 14px;
-  cursor: pointer;
-  margin: 24px auto 4px;
-  display: inline-block;
-  background: linear-gradient(135deg, var(--accent), #5b3bb0);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  text-decoration: none;
-  box-shadow: 0 4px 14px rgba(138, 92, 255, 0.4);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+.error, #unlockError {
+  color: var(--miss);
 }
 
-#startButton:hover, #restartButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(138, 92, 255, 0.55);
-}
-
-#startButton:active, #restartButton:active {
-  transform: translateY(0);
-}
-
+/* --- Play area ----------------------------------------------------- */
 #gameArea {
   position: relative;
   min-width: 70vw;
   height: 80vh;
   overflow: hidden;
-  background: url('images/gameArea-bg.jpg') no-repeat center center;
+  background: url('images/gameArea-bg.png') no-repeat center center;
   background-size: cover;
   margin: 0 auto;
   box-sizing: border-box;
+  border: 2px solid rgba(0, 255, 102, 0.35);
   border-radius: 8px;
-  transition: box-shadow 0.15s ease;
+  box-shadow: 0 0 26px rgba(0, 255, 102, 0.12), inset 0 0 80px rgba(0, 0, 0, 0.55);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 /* Brief red pulse around the play area when a circle is missed --
    deliberately just a border/shadow change, not a layout-affecting
    property, so it can't cause reflow/jank. */
 #gameArea.missFlash {
+  border-color: var(--miss);
   box-shadow: 0 0 0 4px var(--miss), inset 0 0 60px rgba(255, 77, 77, 0.35);
+}
+
+/* Decorative canvas overlay (see startGameFx in src/app.ts). Explicitly
+   pinned to the bottom of the stack so the falling circles, which are
+   appended to #gameArea after it, always paint on top. */
+#gameFx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .chordCircle {
   position: absolute;
+  z-index: 2;
   width: 110px;
   height: 110px;
-  background: radial-gradient(circle, #ffd700, #ff8c00);
+  /* 220x220 sprite (2x for retina) cropped from the delivered emblem so
+     the disc fills the box edge-to-edge; the radial layer above it is a
+     scrim that keeps the label readable over the orb's bright lower half. */
+  background:
+    radial-gradient(circle, rgba(0, 12, 6, 0.74) 0%, rgba(0, 12, 6, 0.44) 55%, rgba(0, 12, 6, 0) 76%),
+    url('images/chord-orb.png') center/cover no-repeat;
   border-radius: 50%;
-  border: 2px solid #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  /* Base size is for the bare single-note circles (generateNoteCircle
+     writes a plain text node, no wrapper div). */
+  font-size: 15px;
   text-align: center;
   padding: 5px;
   box-sizing: border-box;
-  color: #000;
-  line-height: 1.8;
+  color: var(--ink);
+  line-height: 1.5;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.95), 0 0 12px rgba(0, 255, 102, 0.55);
+  filter: drop-shadow(0 0 10px rgba(0, 255, 102, 0.45));
+}
+
+/* Chord circles stack up to three lines inside a 110px disc, so each gets
+   its own size -- Press Start 2P is near-monospace at ~1em per glyph, and
+   a shared size overflowed the art on the longest line. */
+.chordCircle .ccFunction {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.chordCircle .ccLabel {
+  font-size: 12px;
+}
+
+.chordCircle .ccNotes {
+  font-size: 8px;
+  opacity: 0.92;
 }
 
 /* Short-lived "pop" shown where a circle was matched -- a separate
@@ -227,11 +317,12 @@ h1 {
    can't affect the circle-removal/scoring timing it's layered on top of. */
 .matchPop {
   position: absolute;
+  z-index: 3;
   width: 110px;
   height: 110px;
   border-radius: 50%;
-  border: 3px solid #7CFC7C;
-  box-shadow: 0 0 24px rgba(124, 252, 124, 0.8);
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 24px rgba(0, 255, 102, 0.85);
   pointer-events: none;
   animation: matchPop 0.4s ease-out forwards;
 }
@@ -241,16 +332,29 @@ h1 {
   100% { transform: scale(1.5); opacity: 0; }
 }
 
-#scoreDisplay, #livesDisplay {
-  font-size: 16px;
-  margin: 6px;
-  display: inline-block;
-  padding: 8px 14px;
-  background: rgba(20, 15, 35, 0.7);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 6px;
+/* --- HUD ----------------------------------------------------------- */
+.hudPanel {
+  margin: 6px auto 14px;
 }
 
+#scoreDisplay {
+  font-size: 0.9em;
+}
+
+/* Not Press Start 2P: that pixel font has no heart glyph, so the lives
+   would fall back mid-string and render at a mismatched size. */
+#livesDisplay {
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 1.1em;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+#livesDisplay .lifeSpent {
+  opacity: 0.28;
+}
+
+/* --- End screen ---------------------------------------------------- */
 #endScreen h2 {
   margin-bottom: 20px;
   font-size: 1.5em;
@@ -262,14 +366,48 @@ h1 {
   font-family: 'Inter', sans-serif;
 }
 
+/* Mailchimp's own class, kept for any of its markup that isn't the
+   #mc-embedded-subscribe submit already styled above. */
 .button {
   margin-top: 15px;
   padding: 10px 20px;
   font-size: 14px;
   cursor: pointer;
-  background-color: #444;
-  color: #fff;
-  border: none;
+  background: rgba(0, 255, 102, 0.1);
+  color: var(--accent-soft);
+  border: 1px solid rgba(0, 255, 102, 0.45);
   border-radius: 5px;
 }
 
+.mc-field-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.mc-field-group label {
+  font-size: 13px;
+}
+
+#unlockForm p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matrix-panel.is-active > .scanline {
+    animation: none;
+    opacity: 0;
+  }
+
+  .menuItem, #startButton, #restartButton {
+    transition: none;
+  }
+
+  .menuItem:hover, #startButton:hover, #restartButton:hover {
+    transform: none;
+  }
+}

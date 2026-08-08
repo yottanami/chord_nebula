@@ -3,7 +3,9 @@ let midiAccess: MIDIAccess | null = null;
 let midiInput: MIDIInput | undefined;
 let gameRunning: boolean = false;
 let score: number = 0;
-let lives: number = 3;
+/** Starting lives, and the number of heart pips the HUD renders. */
+const MAX_LIVES: number = 3;
+let lives: number = MAX_LIVES;
 
 interface Circle {
   element: HTMLElement;
@@ -294,14 +296,23 @@ function matchesLevel5(chordNotes:string[]):boolean {
   return true;
 }
 
+// The "Score:"/"Lives:" labels now live in index.html as part of the HUD
+// panel markup, so these only write the value itself.
+
 function updateScore():void {
   let s= document.getElementById('scoreDisplay');
-  if(s) s.innerText= "Score: "+score;
+  if(s) s.innerText= String(score);
 }
 
 function updateLives():void {
   let l= document.getElementById('livesDisplay');
-  if(l) l.innerText= "Lives: "+lives;
+  if(!l) return;
+  let remaining= Math.max(0, Math.min(lives, MAX_LIVES));
+  let pips= "";
+  for(let i=0;i<MAX_LIVES;i++){
+    pips+= i<remaining? "♥": '<span class="lifeSpent">♥</span>';
+  }
+  l.innerHTML= pips;
 }
 
 // --- Correct/miss feedback ---
@@ -693,14 +704,17 @@ function generateChordCircle():void {
 
   let element= document.createElement('div');
   element.className= "chordCircle";
+  // Each line is classed so style.css can size it independently: the note
+  // list is much the longest string ("G-B-D-F", or five notes on level 5)
+  // and overflowed the circle art at a single shared font size.
   let htmlContent= "";
   if(showFunctions){
-    htmlContent+= `<div>${chordDegree}</div>`;
+    htmlContent+= `<div class="ccFunction">${chordDegree}</div>`;
   }
-  htmlContent+= `<div>${chordLabel}</div>`;
+  htmlContent+= `<div class="ccLabel">${chordLabel}</div>`;
 
   if(showNotes){
-    htmlContent+= `<div>${displayChord.join("-")}</div>`;
+    htmlContent+= `<div class="ccNotes">${displayChord.join("-")}</div>`;
   }
 
   element.innerHTML= htmlContent;
@@ -877,7 +891,7 @@ async function startGame():Promise<void> {
   if(midiInput) midiInput.onmidimessage= onMIDIMessage;
 
   score=0;
-  lives=3;
+  lives=MAX_LIVES;
   updateScore();
   updateLives();
 
@@ -1157,4 +1171,191 @@ if(navigator.requestMIDIAccess){
       console.error("Failed to access MIDI devices:", err);
       alert("MIDI access was denied. Please allow MIDI access to use Chord Nebula.");
     });
+}
+
+// --- Decorative play-area canvas overlay ---------------------------
+// Ambient equalizer/waveform/matrix-rain drawn over images/gameArea-bg.png
+// (the delivered v2b art), per the asset drop's README: animating on a
+// transparent canvas is far lighter than shipping an animated raster.
+//
+// Three constraints shape this:
+//   * It must never compete with gameplay. The play area's centre is left
+//     empty -- the art was authored with a quiet centre for exactly this
+//     reason -- and #gameFx sits at z-index 0, below .chordCircle.
+//   * It must cost nothing off the game screen. The rAF loop only runs
+//     while #gameScreen is .active and the tab is visible.
+//   * prefers-reduced-motion gets a single static frame, not a loop.
+(function setUpGameFx(): void {
+  const canvas= document.getElementById('gameFx') as HTMLCanvasElement|null;
+  const gameArea= document.getElementById('gameArea');
+  const gameScreen= document.getElementById('gameScreen');
+  if(!canvas|| !gameArea|| !gameScreen) return;
+  const ctx= canvas.getContext('2d');
+  if(!ctx) return;
+  runGameFx(canvas, ctx, gameArea, gameScreen);
+})();
+
+function runGameFx(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  gameArea: HTMLElement,
+  gameScreen: HTMLElement
+): void {
+  const GREEN= '#00ff66';
+  const GREEN_SOFT= '#51ff9a';
+
+  const reduceMotion= typeof window.matchMedia==='function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const streams: { x:number; y:number; speed:number; char:string }[] = [];
+  for(let i=0;i<34;i++){
+    streams.push({
+      x: Math.random(),
+      y: Math.random(),
+      speed: 0.025+ Math.random()*0.07,
+      char: Math.random()>0.5? '1':'0'
+    });
+  }
+
+  let W= 0, H= 0, t= 0, last= 0, rafId= 0;
+
+  function resize(): void {
+    const dpr= Math.min(window.devicePixelRatio|| 1, 2);
+    W= gameArea.clientWidth;
+    H= gameArea.clientHeight;
+    canvas.width= Math.max(1, Math.round(W*dpr));
+    canvas.height= Math.max(1, Math.round(H*dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function glow(alpha: number, blur: number): void {
+    ctx.globalAlpha= alpha;
+    ctx.shadowColor= GREEN;
+    ctx.shadowBlur= blur;
+  }
+
+  function clearGlow(): void {
+    ctx.shadowBlur= 0;
+    ctx.globalAlpha= 1;
+  }
+
+  function drawEqualizer(x:number, y:number, w:number, h:number, time:number, bars:number): void {
+    const gap= w*0.018;
+    const bw= (w- gap*(bars-1))/bars;
+    for(let i=0;i<bars;i++){
+      const phase= i*0.72;
+      const a= (Math.sin(time*3.2+ phase)+1)/2;
+      const b= (Math.sin(time*5.1+ phase*0.6)+1)/2;
+      const level= 0.10+ 0.90*(a*0.58+ b*0.42);
+      const bh= h*level;
+      // Deliberately faint: images/gameArea-bg.png already has equalizers and
+      // dials painted into these corners, so at full opacity the overlay read
+      // as a second set of widgets sitting on top of them. Kept low, it
+      // instead looks like the art's own widgets have come alive.
+      glow(0.15+ 0.17*level, 8);
+      ctx.fillStyle= GREEN;
+      ctx.fillRect(x+ i*(bw+gap), y+ h- bh, bw, bh);
+    }
+    clearGlow();
+  }
+
+  function drawWaveform(x:number, y:number, w:number, h:number, time:number): void {
+    ctx.beginPath();
+    for(let i=0;i<=180;i++){
+      const px= x+ (i/180)*w;
+      const env= Math.sin(Math.PI*i/180);
+      const v=
+        Math.sin(i*0.22+ time*6.0)*0.42+
+        Math.sin(i*0.53- time*4.2)*0.20+
+        Math.sin(i*0.09+ time*2.5)*0.16;
+      const py= y+ h/2+ v*env*h*0.34;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    glow(0.4, 10);
+    ctx.strokeStyle= GREEN_SOFT;
+    ctx.lineWidth= 1.5;
+    ctx.stroke();
+    clearGlow();
+
+    ctx.globalAlpha= 0.10;
+    ctx.strokeStyle= GREEN;
+    ctx.beginPath();
+    ctx.moveTo(x, y+h/2);
+    ctx.lineTo(x+w, y+h/2);
+    ctx.stroke();
+    ctx.globalAlpha= 1;
+  }
+
+  function drawMatrixRain(dt:number): void {
+    ctx.font= Math.max(9, W*0.006)+"px monospace";
+    ctx.textAlign= 'center';
+    ctx.fillStyle= GREEN;
+    for(let i=0;i<streams.length;i++){
+      const s= streams[i];
+      s.y+= s.speed*dt;
+      if(s.y>1.1){ s.y= -0.1; s.x= Math.random(); s.char= Math.random()>0.5? '1':'0'; }
+      ctx.globalAlpha= 0.05+ (i%5)*0.012;
+      ctx.fillText(s.char, s.x*W, s.y*H);
+    }
+    ctx.globalAlpha= 1;
+  }
+
+  /** One frame at the current time `t`. Corners only -- the centre band is
+      left untouched so falling circles stay readable. */
+  function render(dt:number): void {
+    ctx.clearRect(0, 0, W, H);
+    drawMatrixRain(dt);
+    drawEqualizer(W*0.80, H*0.14, W*0.15, H*0.15, t, 24);
+    drawWaveform(W*0.72, H*0.82, W*0.22, H*0.10, t);
+    drawEqualizer(W*0.055, H*0.72, W*0.11, H*0.16, t+0.7, 14);
+    drawWaveform(W*0.045, H*0.23, W*0.20, H*0.075, t+1.1);
+  }
+
+  function frame(ms:number): void {
+    const dt= Math.min(last? (ms-last)/1000: 0, 0.05);
+    last= ms;
+    t+= dt;
+    render(dt);
+    rafId= requestAnimationFrame(frame);
+  }
+
+  function start(): void {
+    if(rafId) return;
+    last= 0;
+    rafId= requestAnimationFrame(frame);
+  }
+
+  function stop(): void {
+    if(!rafId) return;
+    cancelAnimationFrame(rafId);
+    rafId= 0;
+  }
+
+  function redraw(): void {
+    resize();
+    if(reduceMotion) render(0);
+  }
+
+  /** Starts/stops purely off #gameScreen's .active class, so every path
+      that shows or hides the game screen (startGame, endGame, showScreen,
+      the restart button) is covered without touching any of them. */
+  function sync(): void {
+    if(gameScreen.classList.contains('active') && !document.hidden){
+      redraw();
+      if(!reduceMotion) start();
+    } else {
+      stop();
+    }
+  }
+
+  new MutationObserver(sync).observe(gameScreen, { attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('visibilitychange', sync);
+
+  if(typeof ResizeObserver==='function'){
+    new ResizeObserver(redraw).observe(gameArea);
+  } else {
+    window.addEventListener('resize', redraw);
+  }
+
+  sync();
 }

@@ -13,11 +13,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Chord Nebula</title>
+    <!-- matrix-panel.css is the designer-delivered, self-contained panel
+         component (v2b asset drop) -- kept as its own file so a future
+         redelivery can overwrite it wholesale. App-specific adjustments to
+         it belong in style.css, which loads after and wins. -->
+    <link rel="stylesheet" href="matrix-panel.css"/>
     <link rel="stylesheet" href="style.css"/>
   </head>
   <body>
     <div id="mainMenuScreen" class="screen active">
-      <div class="menuContainer">
+      <div class="menuContainer matrix-panel matrix-panel--container">
         <h1>Chord Nebula</h1>
         <p>Learn piano chords and chord progressions with a MIDI keyboard.</p>
         <nav class="screenNav">
@@ -31,7 +36,7 @@
     </div>
 
     <div id="modeSelectScreen" class="screen">
-      <div class="menuContainer">
+      <div class="menuContainer matrix-panel matrix-panel--container">
         <h2>Start Game</h2>
         <div class="menuBody">
           <p><b>Auto</b> &mdash; guided campaign. Starts easy with note names and chord functions visible, then ramps up automatically as you score.</p>
@@ -46,7 +51,7 @@
     </div>
 
     <div id="howToPlayScreen" class="screen">
-      <div class="menuContainer">
+      <div class="menuContainer matrix-panel matrix-panel--container">
         <h2>How to Play</h2>
         <div class="menuBody">
           <p>Connect a MIDI keyboard (or a MIDI-capable app on your phone), then pick your key and level from the setup screen.</p>
@@ -59,7 +64,7 @@
     </div>
 
     <div id="aboutScreen" class="screen">
-      <div class="menuContainer">
+      <div class="menuContainer matrix-panel matrix-panel--container">
         <h2>About</h2>
         <div class="menuBody">
           <p>
@@ -79,7 +84,7 @@
     </div>
 
     <div id="subscribeScreen" class="screen">
-      <div class="menuContainer">
+      <div class="menuContainer matrix-panel matrix-panel--container">
         <h2>Subscribe</h2>
         <div class="menuBody">
           <p>Join the mailing list to stay updated on new releases and changes.</p>
@@ -125,7 +130,7 @@
     </div>
 
     <div id="optionsScreen" class="screen">
-      <div class="menuContainer">
+      <div class="menuContainer matrix-panel matrix-panel--container">
         <h2>Options</h2>
         <div class="menuBody">
           <p>Nothing to configure here yet &mdash; check back in a future update.</p>
@@ -135,7 +140,7 @@
     </div>
 
     <div id="setupScreen" class="screen">
-      <div id="setupContainer">
+      <div id="setupContainer" class="matrix-panel matrix-panel--container">
 	<h1>Chord Nebula</h1>
 	<p>Learn and practice piano chords and common chord progressions in both major and minor keys!</p>
 	<p>Select your MIDI keyboard, key, and level:</p>
@@ -217,15 +222,35 @@
 
     <div id="gameScreen" class="screen">
       <h2>Chord Nebula</h2>
-      <div id="scoreDisplay">Score: 0</div>
-      <div id="livesDisplay">Lives: 3</div>
-      <div id="gameArea"></div>
+      <div class="matrix-panel matrix-panel--md is-active hudPanel">
+        <span class="scanline"></span>
+        <div class="hud-row">
+          <span class="hud-stat">
+            <span class="matrix-panel__label">Score</span>
+            <span class="matrix-panel__value" id="scoreDisplay">0</span>
+          </span>
+          <span class="hud-divider"></span>
+          <span class="hud-stat">
+            <span class="matrix-panel__label">Lives</span>
+            <span class="matrix-panel__value" id="livesDisplay">&#9829;&#9829;&#9829;</span>
+          </span>
+        </div>
+      </div>
+      <div id="gameArea">
+        <!-- Ambient equalizer/waveform/rain drawn over the play-area art.
+             Purely decorative: falling circles are appended after it and
+             sit on a higher z-index (see #gameFx / .chordCircle in
+             style.css), so nothing here can occlude gameplay. -->
+        <canvas id="gameFx" aria-hidden="true"></canvas>
+      </div>
     </div>
 
     <div id="endScreen" class="screen">
-      <h2>Game Over</h2>
-      <div id="finalScore"></div>
-      <button id="restartButton">Restart</button>
+      <div class="menuContainer matrix-panel matrix-panel--container">
+        <h2>Game Over</h2>
+        <div id="finalScore"></div>
+        <button id="restartButton">Restart</button>
+      </div>
     </div>
 
     <script src="dist/app.js"></script>

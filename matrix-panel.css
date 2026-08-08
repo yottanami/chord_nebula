@@ -1,0 +1,193 @@
+
+:root {
+  --hud-green: #00ff66;
+  --hud-green-soft: #4dff9a;
+  --hud-green-dim: rgba(0, 255, 102, 0.20);
+  --hud-bg: rgba(0, 12, 7, 0.86);
+  --hud-grid: rgba(0, 255, 102, 0.055);
+  --hud-border: 2px;
+  --hud-radius: 14px;
+}
+
+/* 
+  Reusable panel:
+  <div class="matrix-panel"> ...anything... </div>
+
+  Width/height are content-driven by default.
+  Set width, min-width, max-width, padding, etc. per use.
+*/
+.matrix-panel {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  min-width: 8rem;
+  min-height: 3.25rem;
+  padding: 0.75rem 1.15rem;
+
+  color: var(--hud-green-soft);
+  background:
+    linear-gradient(var(--hud-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hud-grid) 1px, transparent 1px),
+    linear-gradient(
+      180deg,
+      rgba(0, 28, 14, 0.93),
+      var(--hud-bg)
+    );
+  background-size: 16px 16px, 16px 16px, auto;
+
+  border: var(--hud-border) solid rgba(0, 255, 102, 0.78);
+  border-radius: var(--hud-radius);
+  box-shadow:
+    0 0 8px rgba(0, 255, 102, 0.22),
+    inset 0 0 18px rgba(0, 255, 102, 0.06);
+
+  font-family: "Courier New", ui-monospace, monospace;
+  text-shadow: 0 0 8px rgba(0, 255, 102, 0.45);
+  isolation: isolate;
+}
+
+/* Outer glow + angular cyber corners */
+.matrix-panel::before,
+.matrix-panel::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.matrix-panel::before {
+  inset: -6px;
+  border-radius: calc(var(--hud-radius) + 6px);
+  border: 1px solid rgba(0, 255, 102, 0.22);
+  box-shadow: 0 0 18px rgba(0, 255, 102, 0.10);
+}
+
+/* Decorative corner cuts */
+.matrix-panel::after {
+  inset: 5px;
+  background:
+    linear-gradient(135deg, var(--hud-green) 0 2px, transparent 2px) top left / 22px 22px no-repeat,
+    linear-gradient(225deg, var(--hud-green) 0 2px, transparent 2px) top right / 22px 22px no-repeat,
+    linear-gradient(45deg, var(--hud-green) 0 2px, transparent 2px) bottom left / 22px 22px no-repeat,
+    linear-gradient(315deg, var(--hud-green) 0 2px, transparent 2px) bottom right / 22px 22px no-repeat;
+  opacity: 0.7;
+}
+
+/* Optional scanning highlight */
+.matrix-panel.is-active {
+  overflow: hidden;
+}
+
+.matrix-panel.is-active > .scanline {
+  position: absolute;
+  inset-inline: 0;
+  height: 1px;
+  top: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(77, 255, 154, 0.85),
+    transparent
+  );
+  box-shadow: 0 0 8px rgba(0, 255, 102, 0.65);
+  animation: panelScan 3.2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes panelScan {
+  from { transform: translateY(0); }
+  to { transform: translateY(220px); }
+}
+
+/* Common text helpers */
+.matrix-panel__label {
+  opacity: 0.72;
+  font-size: 0.72em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.matrix-panel__value {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.matrix-panel__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  flex: 0 0 auto;
+  color: var(--hud-green);
+  filter: drop-shadow(0 0 5px rgba(0, 255, 102, 0.45));
+}
+
+/* Useful sizing variants. These do not distort the frame. */
+.matrix-panel--sm {
+  font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+  padding: 0.55rem 0.85rem;
+  min-height: 2.7rem;
+}
+
+.matrix-panel--md {
+  font-size: clamp(0.95rem, 1.45vw, 1.2rem);
+}
+
+.matrix-panel--lg {
+  font-size: clamp(1rem, 2vw, 1.6rem);
+  padding: 1rem 1.4rem;
+}
+
+/* Full-width menu/container version */
+.matrix-panel--container {
+  display: flex;
+  width: min(92vw, 900px);
+  min-height: 9rem;
+  padding: clamp(1rem, 2.5vw, 2rem);
+  align-items: stretch;
+}
+
+/* HUD row: one box containing several values */
+.hud-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.8rem, 2vw, 2rem);
+  flex-wrap: wrap;
+}
+
+.hud-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.hud-divider {
+  width: 1px;
+  align-self: stretch;
+  min-height: 1.6em;
+  background: linear-gradient(
+    transparent,
+    rgba(0, 255, 102, 0.55),
+    transparent
+  );
+}
+
+/* Smaller screens */
+@media (max-width: 640px) {
+  .matrix-panel {
+    gap: 0.55rem;
+    padding: 0.65rem 0.8rem;
+  }
+
+  .hud-row {
+    gap: 0.7rem 1rem;
+  }
+
+  .hud-divider {
+    display: none;
+  }
+}
