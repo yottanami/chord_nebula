@@ -34,21 +34,6 @@
       </div>
     </div>
 
-    <div id="modeSelectScreen" class="screen">
-      <div class="menuContainer matrix-panel matrix-panel--container">
-        <h2>Start Game</h2>
-        <div class="menuBody">
-          <p><b>Auto</b> &mdash; guided campaign. Starts easy with note names and chord functions visible, then ramps up automatically as you score.</p>
-          <p><b>Custom</b> &mdash; pick your own key, level, and what's shown, same as before.</p>
-        </div>
-        <nav class="screenNav">
-          <button class="menuItem" id="modeAutoButton">Auto</button>
-          <button class="menuItem" id="modeCustomButton">Custom</button>
-        </nav>
-        <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
-      </div>
-    </div>
-
     <div id="howToPlayScreen" class="screen">
       <div class="menuContainer matrix-panel matrix-panel--container">
         <h2>How to Play</h2>
@@ -134,6 +119,7 @@
       <div id="setupContainer" class="matrix-panel matrix-panel--container">
 	<h1>Chord Nebula</h1>
 	<p>Learn and practice piano chords and common chord progressions in both major and minor keys!</p>
+	<p>Note names are shown while you find your feet, then drop away once you are scoring, and the pace steps up as you keep going.</p>
 	<p>Select your MIDI keyboard, key, and level:</p>
 
 	<div class="formRow">
@@ -163,17 +149,6 @@
 	  </label>
 	  <label>
 	    <input type="radio" name="mode" value="minor" class="modeRadio"> Minor
-	  </label>
-	</div>
-
-	<div id="manualOptionsRow" class="formRow">
-	  <label>
-	    <input type="checkbox" id="showNotesCheckbox" checked/>
-	    Show chord notes?
-	  </label>
-	  <label>
-	    <input type="checkbox" id="showFunctionsCheckbox" checked/>
-	    Show chord functions?
 	  </label>
 	</div>
 

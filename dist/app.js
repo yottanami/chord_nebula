@@ -22,15 +22,13 @@ let chosenKey = "C";
 let chosenMode = "major";
 let progressionIndex = 0;
 let chordIndex = 0;
+/** Whether orbs currently spell out their notes -- owned by the difficulty
+    ramp (see DIFFICULTY_STAGES), not by the player. */
 let showNotes = true;
-let showFunctions = false;
 let lastSpawn = 0;
 let lastFrameTime = 0;
 let activeOscillators = {};
 let selectedLevel = 4;
-let circleSpawnCount = 0;
-let gameMode = "custom";
-let autoModeUnlocked = false;
 const noteNames = [
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
 ];
@@ -764,14 +762,14 @@ function spawnCircle(element, name, notes) {
     let xFraction = Math.random();
     element.style.left = spawnLeftPx(playField().width, size, xFraction) + "px";
     element.style.top = (-size) + "px";
-    circleSpawnCount++;
-    let speedScale = 1 + circleSpawnCount * 0.01;
     circles.push({
         element,
         noteOrChordName: name,
         noteOrChordNotes: notes,
         y: -size,
-        speed: speedScale,
+        // Read once, at spawn: orbs already falling keep the pace they started
+        // at rather than accelerating under the player mid-descent.
+        speed: currentStage().speed,
         destroyed: false,
         size,
         xFraction
@@ -813,48 +811,52 @@ function generateChordCircle() {
     }
     let element = document.createElement('div');
     element.className = "chordCircle";
-    // Each line is classed so style.css can size it independently: the note
-    // list is much the longest string ("G-B-D-F", or five notes on level 5)
-    // and overflowed the circle art at a single shared font size.
-    let htmlContent = "";
-    if (showFunctions) {
-        htmlContent += `<div class="ccFunction">${chordDegree}</div>`;
-    }
-    htmlContent += `<div class="ccLabel">${chordLabel}</div>`;
-    if (showNotes) {
-        htmlContent += `<div class="ccNotes">${displayChord.join("-")}</div>`;
-    }
-    element.innerHTML = htmlContent;
+    element.innerHTML = orbInnerHtml(chordDegree, chordLabel, displayChord, showNotes);
     spawnCircle(element, chordLabel, finalChord);
 }
-// First-pass difficulty ramp for Auto mode -- deliberately simple, tunable
-// constants (hide names, then functions, then step up chord complexity).
-// Not a final spec: expect an adjustment round after owner playtesting.
-const AUTO_RAMP = [
-    { minScore: 0, level: 3, showNotes: true, showFunctions: true },
-    { minScore: 6, level: 4, showNotes: false, showFunctions: true },
-    { minScore: 14, level: 6, showNotes: false, showFunctions: false },
-    { minScore: 24, level: 7, showNotes: false, showFunctions: false },
-];
 /**
- * Applies the Auto-mode ramp for the current score: picks the highest
- * stage whose minScore has been reached and sets selectedLevel/showNotes/
- * showFunctions from it. Stage levels are clamped by the paid unlock --
- * Auto never advances into a locked level even as the ramp progresses.
+ * The three stacked lines inside a chord orb: scale-degree function, chord
+ * name, and (until the ramp takes them away) the notes to play.
+ *
+ * Each line is classed so style.css can size it independently -- the note
+ * list is much the longest string ("G-B-D-F", or five notes on level 5) and
+ * overflowed the orb art at a single shared font size.
  */
-function applyAutoRamp() {
-    let stage = AUTO_RAMP[0];
-    for (let s of AUTO_RAMP) {
+function orbInnerHtml(functionLabel, chordLabel, notes, withNotes) {
+    let html = `<div class="ccFunction">${functionLabel}</div>`;
+    html += `<div class="ccLabel">${chordLabel}</div>`;
+    if (withNotes)
+        html += `<div class="ccNotes">${notes.join("-")}</div>`;
+    return html;
+}
+// The one difficulty ramp, driven by score. The player picks the level
+// (which chord vocabulary they're practising); this decides how much help
+// they get and how fast it comes.
+//
+// Note names are the first thing to go: reading "C-E-G" off the orb is a
+// different skill from knowing what a C chord is, and the second is the one
+// worth training. The chord name and its function stay visible for good,
+// since they're the vocabulary the game is teaching rather than a crutch.
+// Everything after that is pace: each stage falls faster and spawns sooner.
+const DIFFICULTY_STAGES = [
+    { minScore: 0, showNotes: true, speed: 1.00, spawnMs: 3400 },
+    { minScore: 6, showNotes: false, speed: 1.15, spawnMs: 3100 },
+    { minScore: 14, showNotes: false, speed: 1.35, spawnMs: 2800 },
+    { minScore: 24, showNotes: false, speed: 1.60, spawnMs: 2500 },
+    { minScore: 36, showNotes: false, speed: 1.90, spawnMs: 2200 },
+    { minScore: 50, showNotes: false, speed: 2.25, spawnMs: 2000 },
+];
+/** The highest stage the current score has reached. */
+function currentStage() {
+    let stage = DIFFICULTY_STAGES[0];
+    for (let s of DIFFICULTY_STAGES) {
         if (score >= s.minScore)
             stage = s;
     }
-    selectedLevel = isLevelAllowed(stage.level, autoModeUnlocked) ? stage.level : FREE_LEVEL_MAX;
-    showNotes = stage.showNotes;
-    showFunctions = stage.showFunctions;
+    return stage;
 }
 function generateCircleByLevel() {
-    if (gameMode === 'auto')
-        applyAutoRamp();
+    showNotes = currentStage().showNotes;
     if (selectedLevel === 1 || selectedLevel === 2) {
         generateNoteCircle();
     }
@@ -905,7 +907,7 @@ function updateCircles(deltaMs) {
 function updateCirclesAndSpawn(timestamp, deltaMs) {
     updateCircles(deltaMs);
     syncEngineDrone();
-    if (timestamp - lastSpawn > 3000) {
+    if (timestamp - lastSpawn > currentStage().spawnMs) {
         generateCircleByLevel();
         lastSpawn = timestamp;
     }
@@ -959,40 +961,26 @@ function startGame() {
     return __awaiter(this, void 0, void 0, function* () {
         let midi = document.getElementById('midiSelect');
         let keySel = document.getElementById('keySelect');
-        let notesCheck = document.getElementById('showNotesCheckbox');
-        let functionsCheck = document.getElementById('showFunctionsCheckbox');
         let modeInputs = document.querySelectorAll('input[name="mode"]');
         let levelSelect = document.getElementById('levelSelect');
         let setupScreen = document.getElementById('setupScreen');
         let gameScreen = document.getElementById('gameScreen');
         let endScreen = document.getElementById('endScreen');
-        circleSpawnCount = 0;
-        if (gameMode === 'auto') {
-            autoModeUnlocked = yield isUnlocked();
-            // selectedLevel/showNotes/showFunctions are seeded for score=0 below,
-            // once score itself has been reset -- applyAutoRamp() reads score.
-        }
-        else {
-            if (levelSelect) {
-                selectedLevel = parseInt(levelSelect.value, 10);
-                if (isNaN(selectedLevel) || selectedLevel < 1 || selectedLevel > 8) {
-                    selectedLevel = 4;
-                }
-            }
-            else {
+        if (levelSelect) {
+            selectedLevel = parseInt(levelSelect.value, 10);
+            if (isNaN(selectedLevel) || selectedLevel < 1 || selectedLevel > 8) {
                 selectedLevel = 4;
             }
-            // Real enforcement point -- disabling the <option> elements (see
-            // refreshUnlockUI) is only a UI nicety, not what actually stops a
-            // locked level from starting.
-            if (!isLevelAllowed(selectedLevel, yield isUnlocked())) {
-                alert("Level " + selectedLevel + " needs the paid unlock. Levels 1-3 are free -- see the unlock section to buy or enter a license key.");
-                return;
-            }
-            if (notesCheck)
-                showNotes = notesCheck.checked;
-            if (functionsCheck)
-                showFunctions = functionsCheck.checked;
+        }
+        else {
+            selectedLevel = 4;
+        }
+        // Real enforcement point -- disabling the <option> elements (see
+        // refreshUnlockUI) is only a UI nicety, not what actually stops a
+        // locked level from starting.
+        if (!isLevelAllowed(selectedLevel, yield isUnlocked())) {
+            alert("Level " + selectedLevel + " needs the paid unlock. Levels 1-3 are free -- see the unlock section to buy or enter a license key.");
+            return;
         }
         if (keySel)
             chosenKey = keySel.value;
@@ -1014,8 +1002,8 @@ function startGame() {
         lives = MAX_LIVES;
         updateScore();
         updateLives();
-        if (gameMode === 'auto')
-            applyAutoRamp();
+        // Back to stage one's settings for the new run.
+        showNotes = currentStage().showNotes;
         if (setupScreen)
             setupScreen.classList.remove('active');
         if (gameScreen)
@@ -1215,7 +1203,7 @@ function showScreen(id) {
 // or above this line may execute top-level code that touches document/
 // window/navigator, or the test loader breaks.)
 const menuButtonTargets = {
-    menuStartButton: 'modeSelectScreen',
+    menuStartButton: 'setupScreen',
     menuHowToPlayButton: 'howToPlayScreen',
     menuAboutButton: 'aboutScreen',
     menuSubscribeButton: 'subscribeScreen'
@@ -1271,32 +1259,6 @@ document.querySelectorAll('.screenNav').forEach(nav => {
         }
     });
 });
-/** Shows/hides the setup screen's manual-only controls (level, show
- * notes/functions checkboxes) depending on the chosen game mode -- Auto
- * manages those itself via the difficulty ramp. */
-function setSetupScreenForMode(mode) {
-    let manualOptionsRow = document.getElementById('manualOptionsRow');
-    let levelRow = document.getElementById('levelRow');
-    let display = mode === 'custom' ? '' : 'none';
-    if (manualOptionsRow)
-        manualOptionsRow.style.display = display;
-    if (levelRow)
-        levelRow.style.display = display;
-}
-const modeAutoButton = document.getElementById('modeAutoButton');
-if (modeAutoButton)
-    modeAutoButton.addEventListener('click', () => {
-        gameMode = 'auto';
-        setSetupScreenForMode('auto');
-        showScreen('setupScreen');
-    });
-const modeCustomButton = document.getElementById('modeCustomButton');
-if (modeCustomButton)
-    modeCustomButton.addEventListener('click', () => {
-        gameMode = 'custom';
-        setSetupScreenForMode('custom');
-        showScreen('setupScreen');
-    });
 const startButton = document.getElementById('startButton');
 if (startButton)
     startButton.addEventListener('click', startGame);
