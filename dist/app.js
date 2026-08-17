@@ -910,8 +910,33 @@ function updateCirclesAndSpawn(timestamp, deltaMs) {
         lastSpawn = timestamp;
     }
 }
+/**
+ * Empties the play area of orbs, both the tracking array and the actual
+ * DOM nodes. startGame used to reset `circles` alone, which left every
+ * <div> from the previous run appended to #gameArea -- so a restart began
+ * with the dead orbs of the game before it still painted on screen.
+ *
+ * The stray sweep catches elements no longer in `circles`: a matchPop whose
+ * 400ms cleanup timer hadn't fired when the game ended. It matches those
+ * two classes only, so the #gameFx canvas survives.
+ */
+function clearCircles() {
+    for (const c of circles) {
+        if (c.element.parentNode)
+            c.element.parentNode.removeChild(c.element);
+    }
+    circles = [];
+    let gameArea = document.getElementById('gameArea');
+    if (!gameArea || typeof gameArea.querySelectorAll !== 'function')
+        return;
+    gameArea.querySelectorAll('.chordCircle, .matchPop').forEach(el => {
+        if (el.parentNode)
+            el.parentNode.removeChild(el);
+    });
+}
 function endGame() {
     gameRunning = false;
+    clearCircles();
     let finalScore = document.getElementById('finalScore');
     if (finalScore)
         finalScore.innerText = "Your score: " + score;
@@ -997,7 +1022,10 @@ function startGame() {
             gameScreen.classList.add('active');
         if (endScreen)
             endScreen.classList.remove('active');
-        circles = [];
+        clearCircles();
+        // Any notes still held from the previous run would otherwise count
+        // towards matching the first orb of this one.
+        noteOnStack = [];
         gameRunning = true;
         progressionIndex = 0;
         chordIndex = 0;
@@ -1255,15 +1283,8 @@ if (unlockButton)
 const restartButton = document.getElementById('restartButton');
 if (restartButton)
     restartButton.addEventListener('click', () => {
-        let setupScreen = document.getElementById('setupScreen');
-        let gameScreen = document.getElementById('gameScreen');
-        let endScreen = document.getElementById('endScreen');
-        if (setupScreen)
-            setupScreen.classList.add('active');
-        if (gameScreen)
-            gameScreen.classList.remove('active');
-        if (endScreen)
-            endScreen.classList.remove('active');
+        clearCircles();
+        showScreen('setupScreen');
     });
 if (navigator.requestMIDIAccess) {
     navigator.requestMIDIAccess()
