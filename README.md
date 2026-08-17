@@ -1,6 +1,6 @@
 # Chord Nebula
 
-**Chord Nebula** is a web-based application designed to help you learn and practice both major and minor piano chords, common progressions, harmony rules, and inversions using a MIDI keyboard. Whether you're a beginner looking to build a strong foundation or an intermediate player aiming to refine your skills, Chord Nebula offers an interactive and engaging platform to enhance your musical journey.
+**Chord Nebula** is a web-based application designed to help you learn and practice piano chords, common progressions, harmony rules, and inversions using a MIDI keyboard. Whether you're a beginner looking to build a strong foundation or an intermediate player aiming to refine your skills, Chord Nebula offers an interactive and engaging platform to enhance your musical journey.
 
 
 ## Online Demo
@@ -10,11 +10,12 @@ https://chords.yottanami.com
 
 ## Features
 
-- **Interactive Learning:** Practice major and minor chords with real-time feedback using your MIDI keyboard.
-- **Common Progressions:** Explore and master popular chord progressions to understand the flow of music.
+- **Interactive Learning:** Practice chords with real-time feedback using your MIDI keyboard.
+- **Progressions by genre:** Pop, rock, jazz, blues, classical, folk/country, funk/R&B and EDM, each with the progressions that genre actually runs on.
+- **Seven scales:** Major and minor, plus dorian, phrygian, lydian, mixolydian and locrian, in every key. Each genre offers only the scales its harmony lives in.
 - **Harmony Rules:** Learn fundamental harmony principles to improve your songwriting and improvisation skills.
 - **Inversions:** Discover and practice chord inversions to add variety and complexity to your playing.
-- **Visual Aids:** Optionally display chord notes to reinforce your understanding of chord structures.
+- **A ramp that follows you:** Note names are shown while you find your feet, then drop away, and the pace steps up as your score climbs.
 - **Gamified Experience:** Engage in "Start Game" mode to challenge yourself and make learning fun.
 
 ## Understanding Harmony and Inversions
@@ -31,7 +32,10 @@ https://chords.yottanami.com
 ### Prerequisites
 
 - A MIDI keyboard connected to your computer.
-- A modern web browser (e.g., Chrome, Firefox, Edge).
+- A browser with Web MIDI: Chrome, Edge, Opera or Brave. Firefox needs its
+  Web MIDI site-permission add-on, and Safari has no Web MIDI support. The
+  game says so on the setup screen rather than leaving you with an empty
+  device list.
 
 ### Installation
 
@@ -53,10 +57,10 @@ https://chords.yottanami.com
 
 - *Open* index.html: Launch the application by opening the index.html file in your browser.
 - *Choose Your MIDI Device:* Select your connected MIDI keyboard from the available devices.
-- *Select Key and Chord Type*:
-  - *Choose the desired key* (e.g., C, G, D).
-  - Select whether you want to practice major or minor chords.
-- *Display Chord Notes (Optional):* Decide if you want the chord notes to be displayed on the screen for visual assistance.
+- *Pick genre, scale and key:* The genre decides which progressions you get and
+  which scales they can be drawn from; the scale decides which keys are offered.
+  The setup screen previews the progressions the pair will deal out.
+- *Pick a level:* From single scale notes up to mixed classical harmony.
 - *Start the Game:* Click the "Start Game" button to begin practicing.
 - *Play the Chords:* Play the prompted chords on your MIDI keyboard.
 
@@ -70,7 +74,7 @@ npm run build   # compiles src/app.ts -> dist/app.js, same as always
 
 There's no bundler and `dist/app.js` is committed straight to the repo and
 served as-is by GitHub Pages (`index.html` loads it via a plain
-`<script>` tag, not a module) — `npm run build` just formalizes the `tsc`
+`<script>` tag, not a module). `npm run build` just formalizes the `tsc`
 compile step that already existed. Tests live in `test/` and exercise the
 real chord/game logic in `src/app.ts` directly (see
 `test/support/loadApp.ts` for how, given `src/app.ts` isn't itself a
@@ -79,7 +83,7 @@ module with anything to import).
 ## Levels & unlocking
 
 Levels 1-3 (single notes, basic triads) are free. Levels 4-8 need a
-one-time purchase, verified through a small Cloudflare Worker — the one
+one-time purchase, verified through a small Cloudflare Worker, the one
 piece of server-side infrastructure this otherwise-static site needs,
 since a pure GitHub Pages site can't itself verify a purchase or gate
 content. See [`worker/README.md`](worker/README.md) for the full design

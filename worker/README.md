@@ -9,20 +9,20 @@ product decision and how to actually deploy it.
 
 **Provider: Gumroad.** Chosen over Lemon Squeezy because its license
 verification API (`POST https://api.gumroad.com/v2/licenses/verify`)
-needs no OAuth or API secret to call — just the (non-secret) product ID
-and the customer's key — which keeps this Worker's own secret surface to
+needs no OAuth or API secret to call, just the (non-secret) product ID
+and the customer's key, which keeps this Worker's own secret surface to
 exactly one thing (the token-signing key, below). It's also widely used
 for exactly this "sell a license key for a small product" case.
 
 **Verification: server-checked once, then a self-verifying offline
-token — not "call the Worker on every page load."** A pure static site
+token, not "call the Worker on every page load."** A pure static site
 fundamentally can't have *real* DRM: any client-side check can be patched
 out in devtools by someone determined enough, regardless of how the
 check is implemented. Given that, the goal here isn't unbreakable
 protection, it's:
 
 1. A real purchase, actually checked against Gumroad (including
-   refund/dispute/chargeback status, which only Gumroad's API knows) —
+   refund/dispute/chargeback status, which only Gumroad's API knows):
    not just "did the user type something into a box."
 2. Once verified, an unlock that keeps working offline and doesn't
    depend on this Worker's uptime for every single page load.
@@ -30,7 +30,7 @@ protection, it's:
 That's what the token is for. The Worker holds an ECDSA (P-256) *private*
 key as a secret and signs a small `{unlocked:true, iat:...}` payload with
 it after a successful Gumroad check. The corresponding *public* key is
-committed in `src/app.ts` (`UNLOCK_PUBLIC_KEY_JWK`) — a public key can
+committed in `src/app.ts` (`UNLOCK_PUBLIC_KEY_JWK`): a public key can
 verify a signature but can't forge one, so it's safe to ship in the
 client bundle. The browser checks the signature with `crypto.subtle.verify`
 entirely locally after that; no network call, no re-checking with Gumroad,
@@ -39,7 +39,7 @@ the standard offline-license-verification pattern (asymmetric-signed
 token), not something bespoke.
 
 An HMAC (symmetric-secret) token would have been simpler to implement,
-but the client can't verify an HMAC without knowing the secret — which
+but the client can't verify an HMAC without knowing the secret, which
 means it isn't a secret anymore once it's in client JS. That would have
 forced re-checking with *this Worker* (not Gumroad) on every load instead
 of a genuinely offline check, which doesn't fit "e.g. localStorage token"
@@ -49,9 +49,9 @@ token does.
 ## Deploying
 
 1. **Create the Gumroad product** (a one-time-payment product with
-   license keys enabled — Gumroad's own product settings). Note its
+   license keys enabled, in Gumroad's own product settings). Note its
    product ID.
-2. **Generate a signing key pair.** Anywhere with Node works — do this
+2. **Generate a signing key pair.** Anywhere with Node works, do this
    somewhere the private key output won't be logged/committed anywhere,
    not in this repo, not pasted into an AI session:
    ```js
@@ -81,7 +81,7 @@ token does.
 
 ## Testing without a real purchase
 
-Gumroad supports test-mode purchases/license keys — the Worker
+Gumroad supports test-mode purchases/license keys, and the Worker
 deliberately does **not** reject `purchase.test === true` (see
 `worker/src/verify.ts`), so a Gumroad test purchase round-trips through
 this exact flow end-to-end, per the issue's acceptance criteria.

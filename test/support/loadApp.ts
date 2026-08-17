@@ -1,4 +1,4 @@
-// src/app.ts is a single, un-bundled classic script (no import/export —
+// src/app.ts is a single, un-bundled classic script (no import/export:
 // it's loaded via a plain <script> tag, not type="module") with hundreds
 // of lines of top-level game/chord logic followed by DOM/MIDI wiring that
 // runs immediately on load. There's nothing to `import` from it directly.
@@ -71,7 +71,7 @@ export type AppSandbox = Record<string, unknown>;
 
 /**
  * Runs the pure-logic slice of src/app.ts in a fresh vm context and
- * returns the resulting global object. Fresh per call — the app's chord/
+ * returns the resulting global object. Fresh per call, since the app's chord/
  * game logic relies on shared mutable module state (`noteOnStack`,
  * `chosenKey`, `selectedLevel`, ...), so tests get an isolated sandbox
  * each time rather than leaking state between them.
