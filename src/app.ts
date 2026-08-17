@@ -32,7 +32,10 @@ interface PlayedNote {
 let circles: Circle[] = [];
 let noteOnStack: PlayedNote[] = [];
 let chosenKey: string = "C";
-let chosenMode: "major" | "minor" = "major";
+/** The scale being practised. Named `chosenMode` since the diatonic modes
+    are what it holds, "major" and "minor" (aeolian) among them. */
+let chosenMode: ScaleName = "major";
+let chosenGenre: string = "pop";
 let progressionIndex: number = 0;
 let chordIndex: number = 0;
 /** Whether orbs currently spell out their notes -- owned by the difficulty
@@ -92,62 +95,112 @@ const majorScales:{[key:string]:string[]}={
   "Gb":["Gb","Ab","Bb","Cb","Db","Eb","F"]
 };
 
-const minorScales:{[key:string]:string[]}={
-  "A": ["A","B","C","D","E","F","G"],
-  "E": ["E","F#","G","A","B","C","D"],
-  "B": ["B","C#","D","E","F#","G","A"],
-  "F#":["F#","G#","A","B","C#","D","E"],
-  "C#":["C#","D#","E","F#","G#","A","B"],
-  "G#":["G#","A#","B","C#","D#","E","F#"],
-  "D#":["D#","E#","F#","G#","A#","B","C#"],
-  "A#":["A#","B#","C#","D#","E#","F#","G#"],
-  "D": ["D","E","F","G","A","Bb","C"],
-  "G": ["G","A","Bb","C","D","Eb","F"],
-  "C": ["C","D","Eb","F","G","Ab","Bb"],
-  "F": ["F","G","Ab","Bb","C","Db","Eb"],
-  "Bb":["Bb","C","Db","Eb","F","Gb","Ab"],
-  "Eb":["Eb","F","Gb","Ab","Bb","Cb","Db"]
+// --- Scales -------------------------------------------------------
+// Every diatonic mode is a rotation of some major scale, so majorScales
+// above is the only spelled table this file needs: minor (aeolian) is the
+// major scale started on its 6th degree, dorian on its 2nd, and so on.
+// That's what lets the game offer seven scales without seven tables, and
+// it's why the scale spellings stay musically correct in every key (Eb
+// dorian comes out of Db major, not C# major).
+
+type ScaleName =
+  | "major"
+  | "dorian"
+  | "phrygian"
+  | "lydian"
+  | "mixolydian"
+  | "minor"
+  | "locrian";
+
+/** Which degree of the parent major scale each mode starts on. */
+const MODE_ROTATION: { [key in ScaleName]: number } = {
+  major: 0,
+  dorian: 1,
+  phrygian: 2,
+  lydian: 3,
+  mixolydian: 4,
+  minor: 5,
+  locrian: 6
 };
 
-const degreeMapMajor:any={
-  "I":0,"ii":1,"iii":2,"IV":3,"V":4,"vi":5,"vii":6
-};
-const degreeMapMinor:any={
-  "i":0,"ii°":1,"III":2,"iv":3,"v":4,"VI":5,"VII":6
-};
-
-const degreeQualityMapMajor:any={
-  "I":"maj","ii":"min","iii":"min","IV":"maj","V":"maj","vi":"min","vii":"dim"
-};
-const degreeQualityMapMinor:any={
-  "i":"min","ii°":"dim","III":"maj","iv":"min","v":"min","VI":"maj","VII":"maj"
+const SCALE_LABELS: { [key in ScaleName]: string } = {
+  major: "Major",
+  dorian: "Dorian",
+  phrygian: "Phrygian",
+  lydian: "Lydian",
+  mixolydian: "Mixolydian",
+  minor: "Minor",
+  locrian: "Locrian"
 };
 
-const degreeSeventhQualityMapMajor: { [key: string]: ChordQuality } = {
-  "I":"maj7","ii":"min7","iii":"min7","IV":"maj7","V":"dom7","vi":"min7","vii":"hdim7"
-};
-const degreeSeventhQualityMapMinor: { [key: string]: ChordQuality } = {
-  "i":"min7","ii°":"hdim7","III":"maj7","iv":"min7","v":"min7","VI":"maj7","VII":"dom7"
-};
-
-const degreeNinthQualityMapMajor: { [key: string]: ChordQuality } = {
-  "I":"maj9","ii":"min9","iii":"min9","IV":"maj9","V":"dom9","vi":"min9","vii":"hdim9"
-};
-const degreeNinthQualityMapMinor: { [key: string]: ChordQuality } = {
-  "i":"min9","ii°":"hdim9","III":"maj9","iv":"min9","v":"min9","VI":"maj9","VII":"dom9"
-};
-
-const majorProgressions=[
-  ["I","IV","V","I"],
-  ["I","vi","IV","V"],
-  ["ii","V","I","I"]
+/** majorScales' keys in circle-of-fifths order, which is the order the key
+    dropdown has always listed and the order derived tonics inherit. */
+const MAJOR_KEY_ORDER: string[] = [
+  "C","G","D","A","E","B","F#","C#","F","Bb","Eb","Ab","Db","Gb"
 ];
 
-const minorProgressions=[
-  ["i","iv","v","i"],
-  ["i","VI","III","VII"],
-  ["ii°","v","i","i"]
-];
+/** Semitones above the tonic for each degree of a major scale. */
+const MAJOR_SCALE_SEMITONES: number[] = [0,2,4,5,7,9,11];
+
+function pitchClass(note:string):number {
+  return noteNames.indexOf(toSharpName(note));
+}
+
+/**
+ * The spelled notes of a scale, e.g. buildScale("D","dorian") is
+ * D E F G A B C. Found by locating the major scale that spells `tonic` at
+ * this mode's rotation and rotating it to start there.
+ */
+function buildScale(tonic:string, scale:ScaleName):string[] {
+  let rotation= MODE_ROTATION[scale];
+  // Exact spelling first: both Db major and C# major have a 2nd degree at
+  // pitch class 3, but only Db major spells it "Eb", which is what makes
+  // Eb dorian come out as Eb F Gb Ab Bb C Db instead of D# E# F# ...
+  for(const key of MAJOR_KEY_ORDER){
+    let parent= majorScales[key];
+    if(parent[rotation]=== tonic){
+      return parent.slice(rotation).concat(parent.slice(0, rotation));
+    }
+  }
+  // Enharmonic fallback for a tonic no major key spells that way (G# dorian,
+  // say): same pitches, spelled as its parent key spells them.
+  for(const key of MAJOR_KEY_ORDER){
+    let parent= majorScales[key];
+    if(pitchClass(parent[rotation])=== pitchClass(tonic)){
+      return parent.slice(rotation).concat(parent.slice(0, rotation));
+    }
+  }
+  return majorScales["C"];
+}
+
+/** The scale currently being played. */
+function currentScale():string[] {
+  return buildScale(chosenKey, chosenMode);
+}
+
+/** Tonics offered for a scale: one per major key, so minor yields the same
+    14 keys the old hardcoded minor table listed, in the same order. */
+function getKeysForScale(scale:ScaleName):string[] {
+  let rotation= MODE_ROTATION[scale];
+  let keys:string[]=[];
+  for(const key of MAJOR_KEY_ORDER){
+    let tonic= majorScales[key][rotation];
+    if(keys.indexOf(tonic)<0) keys.push(tonic);
+  }
+  return keys;
+}
+
+/** Prefers the scale's own spelling of a pitch, so a Bb key reads "Bb"
+    rather than the sharp-normalised "A#" that note matching works in.
+    Pitches outside the scale (level 7's dim/aug, level 8's chromatics)
+    keep the spelling they arrive with. */
+function spellNoteInScale(note:string, scale:string[]):string {
+  let pc= pitchClass(note);
+  for(const scaleNote of scale){
+    if(pitchClass(scaleNote)=== pc) return scaleNote;
+  }
+  return note;
+}
 
 function ensureAudioContext():void {
   if(!audioContext) audioContext=new AudioContext();
@@ -519,48 +572,42 @@ function noteNameToFreq(name:string):number {
   return 440*Math.pow(2, semitoneDiff/12);
 }
 
-function chordDegreesToChordNotes(key:string, degree:string, mode:"major"|"minor"):string[] {
-  let scale= (mode==="major"? majorScales[key]: minorScales[key])|| [];
-  let degMap= (mode==="major"? degreeMapMajor: degreeMapMinor);
-  let idx= degMap[degree];
-  if(idx===undefined) return ["C","E","G"];
-  let root= scale[idx];
-  let third= scale[(idx+2)%7];
-  let fifth= scale[(idx+4)%7];
-  return [root, third, fifth].map(normalizeChordNote);
-}
+/** Semitones above the root for every chord the game can build. Read in
+    both directions (see qualityFromIntervals), so a quality's formula and
+    the recognition of that formula can't drift apart. */
+const QUALITY_INTERVALS: { [key in ChordQuality]: number[] } = {
+  maj:  [0,4,7],
+  min:  [0,3,7],
+  dim:  [0,3,6],
+  aug:  [0,4,8],
+  dom7: [0,4,7,10],
+  maj7: [0,4,7,11],
+  min7: [0,3,7,10],
+  hdim7:[0,3,6,10],
+  dim7: [0,3,6,9],
+  maj9: [0,4,7,11,14],
+  min9: [0,3,7,10,14],
+  dom9: [0,4,7,10,14],
+  hdim9:[0,3,6,10,14]
+};
 
 function chordQualityToIntervals(quality: ChordQuality): number[] {
-  switch(quality){
-    case "maj":
-      return [0,4,7];
-    case "min":
-      return [0,3,7];
-    case "dim":
-      return [0,3,6];
-    case "aug":
-      return [0,4,8];
-    case "dom7":
-      return [0,4,7,10];
-    case "maj7":
-      return [0,4,7,11];
-    case "min7":
-      return [0,3,7,10];
-    case "hdim7":
-      return [0,3,6,10];
-    case "dim7":
-      return [0,3,6,9];
-    case "maj9":
-      return [0,4,7,11,14];
-    case "min9":
-      return [0,3,7,10,14];
-    case "dom9":
-      return [0,4,7,10,14];
-    case "hdim9":
-      return [0,3,6,10,14];
-    default:
-      return [0,4,7];
+  return QUALITY_INTERVALS[quality]|| QUALITY_INTERVALS.maj;
+}
+
+/** The quality whose formula is exactly `semitones`, or null if the stack
+    isn't one of the chords in the vocabulary. */
+function qualityFromIntervals(semitones: number[]): ChordQuality|null {
+  for(const quality of Object.keys(QUALITY_INTERVALS) as ChordQuality[]){
+    let intervals= QUALITY_INTERVALS[quality];
+    if(intervals.length!== semitones.length) continue;
+    let same= true;
+    for(let i=0;i<intervals.length;i++){
+      if(intervals[i]!== semitones[i]){ same= false; break; }
+    }
+    if(same) return quality;
   }
+  return null;
 }
 
 function chordQualityToLabel(quality: ChordQuality): string {
@@ -604,28 +651,79 @@ function buildChordFromRoot(root: string, quality: ChordQuality): string[] {
   return intervals.map(semi => noteNames[(rootIndex+ semi)%12]);
 }
 
-function getTriadQuality(degree: string): ChordQuality {
-  let mapRef= (chosenMode==="major"? degreeQualityMapMajor: degreeQualityMapMinor);
-  return mapRef[degree] || "maj";
+// --- Diatonic chords ----------------------------------------------
+// Qualities are derived from the scale rather than tabulated per mode:
+// stack every other scale note, measure the intervals, look the formula
+// up. That's the same answer the old hardcoded major/minor tables gave,
+// and it holds for the five other modes for free.
+
+/** The `size`-note chord on a scale degree: every other note from there. */
+function diatonicChordNotes(scale:string[], degreeIndex:number, size:number):string[] {
+  let notes:string[]=[];
+  for(let i=0;i<size;i++){
+    notes.push(scale[(degreeIndex+ i*2)% scale.length]);
+  }
+  return notes;
 }
 
-function getSeventhQuality(degree: string): ChordQuality {
-  let mapRef= (chosenMode==="major"? degreeSeventhQualityMapMajor: degreeSeventhQualityMapMinor);
-  return mapRef[degree] || "dom7";
+/**
+ * Semitones from `root` up to `note`, lifted past `atLeast` so a stack of
+ * thirds reads as ascending intervals (a 9th comes out 14, not 2).
+ */
+function intervalAbove(root:string, note:string, atLeast:number):number {
+  let semis= ((pitchClass(note)- pitchClass(root))% 12+ 12)% 12;
+  while(semis< atLeast) semis+= 12;
+  return semis;
 }
 
-function getNinthQuality(degree: string): ChordQuality {
-  let mapRef= (chosenMode==="major"? degreeNinthQualityMapMajor: degreeNinthQualityMapMinor);
-  return mapRef[degree] || "dom9";
+/** Quality of the diatonic chord of `size` notes on a scale degree. */
+function diatonicQuality(scale:string[], degreeIndex:number, size:number):ChordQuality {
+  let notes= diatonicChordNotes(scale, degreeIndex, size);
+  let semitones= [0];
+  let previous= 0;
+  for(let i=1;i<notes.length;i++){
+    previous= intervalAbove(notes[0], notes[i], previous+1);
+    semitones.push(previous);
+  }
+  return qualityFromIntervals(semitones)|| (size>=4? "dom7": "maj");
 }
 
-function isDominantDegree(degree: string): boolean {
-  let clean= degree.replace("°","");
-  return clean==="V" || clean==="v";
+const ROMAN_NUMERALS: string[] = ["I","II","III","IV","V","VI","VII"];
+
+/**
+ * Roman-numeral function label for a degree: "V", "ii", "ii°", "bVII".
+ *
+ * Case follows the chord's third and the accidental compares the degree's
+ * root against the major scale's degree of the same number, which is what
+ * writing "bIII" in a minor key or "bII" in phrygian actually means.
+ * Generating these is what lets a new mode arrive without a label table.
+ */
+function degreeLabel(scale:string[], degreeIndex:number, quality:ChordQuality):string {
+  let index= degreeIndex% scale.length;
+  let expected= (pitchClass(scale[0])+ MAJOR_SCALE_SEMITONES[index])% 12;
+  let actual= pitchClass(scale[index]);
+  // Shortest signed distance, so 11 semitones up reads as one semitone flat.
+  let offset= ((actual- expected+ 18)% 12)- 6;
+  let accidental= "";
+  for(let i=0;i<Math.abs(offset);i++) accidental+= offset<0? "b": "#";
+  let intervals= chordQualityToIntervals(quality);
+  let numeral= ROMAN_NUMERALS[index];
+  let label= accidental+ (intervals[1]===3? numeral.toLowerCase(): numeral);
+  // Every diminished flavour gets the same mark: the chord name beside it
+  // ("m7b5") already draws the half-diminished distinction, and the pixel
+  // font has no slashed-o glyph to draw it with here.
+  if(quality==="dim"|| quality==="dim7"|| quality==="hdim7"|| quality==="hdim9") label+= "°";
+  else if(quality==="aug") label+= "+";
+  return label;
 }
 
-function chooseLevel8Quality(degree: string): ChordQuality {
-  let baseQuality= getTriadQuality(degree);
+/** Degree index of the dominant, the one degree that takes a dom7 even
+    where the scale wouldn't produce one. */
+function isDominantDegree(degreeIndex: number): boolean {
+  return degreeIndex% 7=== 4;
+}
+
+function chooseLevel8Quality(baseQuality: ChordQuality, degreeIndex: number): ChordQuality {
   let options: ChordQuality[] = [baseQuality];
   if(baseQuality==="maj"){
     options.push("maj7","maj9");
@@ -634,7 +732,7 @@ function chooseLevel8Quality(degree: string): ChordQuality {
   } else if(baseQuality==="dim"){
     options.push("hdim7","hdim9","dim7");
   }
-  if(isDominantDegree(degree)){
+  if(isDominantDegree(degreeIndex)){
     options.push("dom7","dom9");
   }
   if(Math.random()<0.2){
@@ -646,44 +744,198 @@ function chooseLevel8Quality(degree: string): ChordQuality {
   return options[Math.floor(Math.random()*options.length)];
 }
 
-function getChordRootFromDegree(key: string, degree: string, mode: "major"|"minor"): string {
-  let scale= (mode==="major"? majorScales[key]: minorScales[key])|| [];
-  let degMap= (mode==="major"? degreeMapMajor: degreeMapMinor);
-  let idx= degMap[degree];
-  if(idx===undefined) return "C";
-  return scale[idx] || "C";
+function getChordRootFromDegree(key: string, degreeIndex: number, mode: ScaleName): string {
+  let scale= buildScale(key, mode);
+  return scale[degreeIndex% scale.length]|| "C";
 }
 
-function getChordSpecForLevel(degree: string): { root: string; quality: ChordQuality; notes: string[] } {
-  let root= getChordRootFromDegree(chosenKey, degree, chosenMode);
+interface ChordSpec {
+  /** Scale spelling of the root, e.g. "Eb" rather than "D#". */
+  root: string;
+  quality: ChordQuality;
+  /** Sharp-normalised pitches, which is what note matching compares. */
+  notes: string[];
+  /** Roman-numeral function of this degree in the current scale. */
+  functionLabel: string;
+}
+
+function getChordSpecForLevel(degreeIndex: number): ChordSpec {
+  let scale= currentScale();
+  let root= getChordRootFromDegree(chosenKey, degreeIndex, chosenMode);
+  let triad= diatonicQuality(scale, degreeIndex, 3);
   let quality: ChordQuality;
   if(selectedLevel===6){
-    quality= getSeventhQuality(degree);
+    quality= diatonicQuality(scale, degreeIndex, 4);
   } else if(selectedLevel===7){
     quality= Math.random()<0.5 ? "dim" : "aug";
   } else if(selectedLevel===8){
-    quality= chooseLevel8Quality(degree);
+    quality= chooseLevel8Quality(triad, degreeIndex);
   } else {
-    quality= getTriadQuality(degree);
+    quality= triad;
   }
   let notes= buildChordFromRoot(root, quality);
-  return { root, quality, notes };
+  return { root, quality, notes, functionLabel: degreeLabel(scale, degreeIndex, quality) };
 }
 
-function getProgressions():string[][] {
-  return (chosenMode==="major"? majorProgressions: minorProgressions);
+// --- Genres and progressions ---------------------------------------
+// Progressions are stored as 0-based scale degrees, not roman numerals, so
+// the same shape works in any scale and the numerals shown on the orbs can
+// be generated from the scale (see degreeLabel). Each genre lists only the
+// scales that genre's harmony actually lives in, and the scale selector is
+// built from that list.
+
+interface Progression {
+  /** How the progression is written, for the setup screen's preview. */
+  label: string;
+  scale: ScaleName;
+  /** Scale degrees in playing order, 0 being the tonic. */
+  degrees: number[];
 }
 
-function getNextChordName():string {
+interface Genre {
+  id: string;
+  label: string;
+  progressions: Progression[];
+}
+
+const GENRES: Genre[] = [
+  {
+    id: "pop",
+    label: "Pop",
+    progressions: [
+      { label: "I-V-vi-IV",     scale: "major", degrees: [0,4,5,3] },
+      { label: "vi-IV-I-V",     scale: "major", degrees: [5,3,0,4] },
+      { label: "I-vi-IV-V",     scale: "major", degrees: [0,5,3,4] },
+      { label: "I-IV-vi-V",     scale: "major", degrees: [0,3,5,4] },
+      { label: "i-bVI-bIII-bVII", scale: "minor", degrees: [0,5,2,6] },
+      { label: "i-bVII-bVI-bVII", scale: "minor", degrees: [0,6,5,6] }
+    ]
+  },
+  {
+    id: "rock",
+    label: "Rock",
+    progressions: [
+      { label: "I-IV-V-I",       scale: "major",      degrees: [0,3,4,0] },
+      { label: "I-V-IV-I",       scale: "major",      degrees: [0,4,3,0] },
+      { label: "I-bVII-IV-I",    scale: "mixolydian", degrees: [0,6,3,0] },
+      { label: "I-IV-bVII-IV",   scale: "mixolydian", degrees: [0,3,6,3] },
+      { label: "i-bVII-bVI-bVII", scale: "minor",     degrees: [0,6,5,6] },
+      { label: "i-iv-i-v",       scale: "minor",      degrees: [0,3,0,4] },
+      { label: "i-IV vamp",      scale: "dorian",     degrees: [0,3,0,3] }
+    ]
+  },
+  {
+    id: "jazz",
+    label: "Jazz",
+    progressions: [
+      { label: "ii-V-I",          scale: "major",  degrees: [1,4,0] },
+      { label: "I-vi-ii-V",       scale: "major",  degrees: [0,5,1,4] },
+      { label: "iii-vi-ii-V",     scale: "major",  degrees: [2,5,1,4] },
+      { label: "I-IV-iii-vi",     scale: "major",  degrees: [0,3,2,5] },
+      { label: "ii-v-i",          scale: "minor",  degrees: [1,4,0] },
+      { label: "i-iv-bVII-bIII",  scale: "minor",  degrees: [0,3,6,2] },
+      { label: "i-IV vamp",       scale: "dorian", degrees: [0,3,0,3] },
+      { label: "i-ii-bIII-ii",    scale: "dorian", degrees: [0,1,2,1] }
+    ]
+  },
+  {
+    id: "blues",
+    label: "Blues",
+    progressions: [
+      { label: "12-bar (condensed)", scale: "mixolydian", degrees: [0,3,0,4,3,0] },
+      { label: "quick change",       scale: "mixolydian", degrees: [0,3,0,0] },
+      { label: "I-IV-I-V turnaround", scale: "mixolydian", degrees: [0,3,0,4] },
+      { label: "minor blues i-iv-i-v", scale: "minor",    degrees: [0,3,0,4] }
+    ]
+  },
+  {
+    id: "classical",
+    label: "Classical",
+    progressions: [
+      { label: "I-IV-V-I (authentic)", scale: "major", degrees: [0,3,4,0] },
+      { label: "I-IV-I-V (plagal)",    scale: "major", degrees: [0,3,0,4] },
+      { label: "I-vi-IV-V-I",          scale: "major", degrees: [0,5,3,4,0] },
+      { label: "circle of fifths",     scale: "major", degrees: [0,3,6,2,5,1,4,0] },
+      { label: "i-iv-v-i",             scale: "minor", degrees: [0,3,4,0] },
+      { label: "i-bVI-ii-v",           scale: "minor", degrees: [0,5,1,4] }
+    ]
+  },
+  {
+    id: "folk",
+    label: "Folk / Country",
+    progressions: [
+      { label: "I-IV-V-V",    scale: "major",      degrees: [0,3,4,4] },
+      { label: "I-V-IV-I",    scale: "major",      degrees: [0,4,3,0] },
+      { label: "I-V-vi-IV",   scale: "major",      degrees: [0,4,5,3] },
+      { label: "I-IV-I-V",    scale: "major",      degrees: [0,3,0,4] },
+      { label: "I-bVII-IV-I", scale: "mixolydian", degrees: [0,6,3,0] }
+    ]
+  },
+  {
+    id: "funk",
+    label: "Funk / R&B",
+    progressions: [
+      { label: "i-IV vamp",     scale: "dorian", degrees: [0,3,0,3] },
+      { label: "i-ii-i-IV",     scale: "dorian", degrees: [0,1,0,3] },
+      { label: "ii-V vamp",     scale: "major",  degrees: [1,4,1,4] },
+      { label: "i-bVII-bVI-v",  scale: "minor",  degrees: [0,6,5,4] }
+    ]
+  },
+  {
+    id: "edm",
+    label: "EDM",
+    progressions: [
+      { label: "i-bVI-bIII-bVII", scale: "minor",    degrees: [0,5,2,6] },
+      { label: "i-bVII-bVI-bVII", scale: "minor",    degrees: [0,6,5,6] },
+      { label: "vi-IV-I-V",       scale: "major",    degrees: [5,3,0,4] },
+      { label: "i-bII-i-bVII",    scale: "phrygian", degrees: [0,1,0,6] },
+      { label: "i-bVI-bVII-i",    scale: "phrygian", degrees: [0,5,6,0] }
+    ]
+  }
+];
+
+function getGenre(id: string): Genre {
+  for(const genre of GENRES){
+    if(genre.id=== id) return genre;
+  }
+  return GENRES[0];
+}
+
+/** The scales a genre's progressions use, in the order they first appear.
+    This is the whole of "limit each genre to its own scales": the scale
+    selector is built from it. */
+function getScalesForGenre(id: string): ScaleName[] {
+  let scales: ScaleName[] = [];
+  for(const progression of getGenre(id).progressions){
+    if(scales.indexOf(progression.scale)<0) scales.push(progression.scale);
+  }
+  return scales;
+}
+
+function getProgressionsFor(genreId: string, scale: ScaleName): Progression[] {
+  let matching= getGenre(genreId).progressions.filter(p=> p.scale=== scale);
+  // A scale the genre doesn't cover can only be reached by tampering with
+  // the selects; fall back to the genre's own progressions rather than
+  // leaving the game with nothing to spawn.
+  return matching.length>0? matching: getGenre(genreId).progressions;
+}
+
+function getProgressions():number[][] {
+  return getProgressionsFor(chosenGenre, chosenMode).map(p=> p.degrees);
+}
+
+/** Walks the current progression one chord at a time, then moves on to the
+    next progression of the genre and wraps. */
+function getNextChordDegree():number {
   let p= getProgressions();
-  let progression= p[progressionIndex];
-  let chordName= progression[chordIndex];
+  let progression= p[progressionIndex% p.length];
+  let degree= progression[chordIndex% progression.length];
   chordIndex++;
   if(chordIndex>= progression.length){
     chordIndex=0;
     progressionIndex=(progressionIndex+1)% p.length;
   }
-  return chordName;
+  return degree;
 }
 
 function invertChord(notes:string[], inversion:number):string[] {
@@ -727,7 +979,7 @@ function closestInversion(prevChord:string[]| null, chord:string[]):{inv:string[
 }
 
 function getNextSingleNote():string {
-  let scale= (chosenMode==="major"? majorScales[chosenKey]: minorScales[chosenKey])|| [];
+  let scale= currentScale();
   if(selectedLevel===1){
     let note= scale[chordIndex];
     chordIndex++;
@@ -739,18 +991,16 @@ function getNextSingleNote():string {
   }
 }
 
-function getChordFullName(
-  key: string,
-  degree: string,
-  baseChord: string[],
-  finalChord: string[],
-  quality?: ChordQuality
-): string {
-  let root= baseChord[0];
-  let resolvedQuality= quality || getTriadQuality(degree);
-  let labelSuffix= chordQualityToLabel(resolvedQuality);
-  if(labelSuffix==="") return root;
-  return `${root}${labelSuffix}`;
+/**
+ * Display name of a chord: the root as the scale spells it, plus the
+ * quality's suffix ("Eb", "Ebm7", "Gdim").
+ *
+ * The root has to come from the scale, not from the chord's note list --
+ * that list is sharp-normalised for matching, so reading the root off it
+ * showed Eb major's tonic chord as "D#" and Bb minor's as "A#".
+ */
+function getChordFullName(root: string, quality: ChordQuality): string {
+  return root+ chordQualityToLabel(quality);
 }
 
 function noteNameToMidi(noteName:string, octave:number=2):number {
@@ -841,14 +1091,14 @@ function generateNoteCircle():void {
 }
 
 function generateChordCircle():void {
-  let chordDegree= getNextChordName();
-  let chordSpec= getChordSpecForLevel(chordDegree);
+  let scale= currentScale();
+  let chordSpec= getChordSpecForLevel(getNextChordDegree());
   let baseChord= chordSpec.notes;
   let lastChord= circles.length>0? circles[circles.length-1].noteOrChordNotes: null;
   let ci= closestInversion(lastChord, baseChord);
   let invertedChord= ci.inv;
   let chordAsc= [...invertedChord].sort((a,b)=> noteNames.indexOf(a)- noteNames.indexOf(b));
-  let chordLabel= getChordFullName(chosenKey, chordDegree, baseChord, invertedChord, chordSpec.quality);
+  let chordLabel= getChordFullName(chordSpec.root, chordSpec.quality);
 
   let finalChord= chordAsc;
   if(selectedLevel===5){
@@ -869,7 +1119,14 @@ function generateChordCircle():void {
 
   let element= document.createElement('div');
   element.className= "chordCircle";
-  element.innerHTML= orbInnerHtml(chordDegree, chordLabel, displayChord, showNotes);
+  // Notes are shown in the scale's own spelling ("Bb-D-F"), not the
+  // sharp-normalised form the matcher compares ("A#-D-F").
+  element.innerHTML= orbInnerHtml(
+    chordSpec.functionLabel,
+    chordLabel,
+    displayChord.map(n=> spellNoteInScale(n, scale)),
+    showNotes
+  );
 
   spawnCircle(element, chordLabel, finalChord);
 }
@@ -1032,7 +1289,8 @@ function stopAllSounds():void {
 async function startGame():Promise<void> {
   let midi= document.getElementById('midiSelect') as HTMLSelectElement|null;
   let keySel= document.getElementById('keySelect') as HTMLSelectElement|null;
-  let modeInputs= document.querySelectorAll('input[name="mode"]') as NodeListOf<HTMLInputElement>;
+  let genreSel= document.getElementById('genreSelect') as HTMLSelectElement|null;
+  let scaleSel= document.getElementById('scaleSelect') as HTMLSelectElement|null;
   let levelSelect= document.getElementById('levelSelect') as HTMLSelectElement|null;
   let setupScreen= document.getElementById('setupScreen');
   let gameScreen= document.getElementById('gameScreen');
@@ -1055,16 +1313,14 @@ async function startGame():Promise<void> {
     return;
   }
 
-  if(keySel) chosenKey= keySel.value;
+  if(genreSel&& genreSel.value) chosenGenre= genreSel.value;
+  if(scaleSel&& scaleSel.value) chosenMode= scaleSel.value as ScaleName;
+  if(keySel&& keySel.value) chosenKey= keySel.value;
 
   if(!isValidMidiInput(midi?.options)){
     alert("Please select a valid MIDI input device");
     return;
   }
-
-  modeInputs.forEach(m=>{
-    if(m.checked) chosenMode= m.value as "major"|"minor";
-  });
 
   let selectedId= midi ? midi.value: "";
   let inputs:MIDIInput[]=[];
@@ -1327,6 +1583,89 @@ document.querySelectorAll('.screenNav').forEach(nav=>{
     }
   });
 });
+
+// --- Setup screen: genre -> scale -> key ---------------------------
+// Each select narrows the next one: a genre offers only the scales its
+// progressions use, and a scale offers only the tonics that spell it
+// correctly. Options are built here rather than listed in index.html
+// because both lists are derived (see getScalesForGenre, getKeysForScale).
+
+function addOption(select:HTMLSelectElement, value:string, text:string):void {
+  let option= document.createElement('option');
+  option.value= value;
+  option.innerText= text;
+  select.appendChild(option);
+}
+
+function populateGenreSelect():void {
+  let select= document.getElementById('genreSelect') as HTMLSelectElement|null;
+  if(!select) return;
+  select.innerHTML= "";
+  for(const genre of GENRES) addOption(select, genre.id, genre.label);
+  select.value= chosenGenre;
+}
+
+function populateScaleSelect():void {
+  let select= document.getElementById('scaleSelect') as HTMLSelectElement|null;
+  if(!select) return;
+  let scales= getScalesForGenre(chosenGenre);
+  select.innerHTML= "";
+  for(const scale of scales) addOption(select, scale, SCALE_LABELS[scale]);
+  // Keep the current scale if the new genre also uses it, so switching
+  // genres doesn't silently drop you out of the minor you were practising.
+  if(scales.indexOf(chosenMode)<0) chosenMode= scales[0];
+  select.value= chosenMode;
+}
+
+function populateKeySelect():void {
+  let select= document.getElementById('keySelect') as HTMLSelectElement|null;
+  if(!select) return;
+  let keys= getKeysForScale(chosenMode);
+  // Modes spell their tonics differently (A minor, C major, D dorian are
+  // all the white notes), so the old key is matched by pitch rather than by
+  // name: picking Bb major then switching to dorian lands on Bb dorian.
+  let wanted= pitchClass(chosenKey);
+  let match= keys.filter(k=> pitchClass(k)=== wanted)[0];
+  chosenKey= match|| keys[0];
+  select.innerHTML= "";
+  for(const key of keys) addOption(select, key, key);
+  select.value= chosenKey;
+}
+
+/** Lists what the current genre and scale will actually throw at you. */
+function renderProgressionPreview():void {
+  let preview= document.getElementById('progressionPreview');
+  if(!preview) return;
+  let labels= getProgressionsFor(chosenGenre, chosenMode).map(p=> p.label);
+  preview.innerText= "Progressions: "+ labels.join("  |  ");
+}
+
+function refreshSetupSelects():void {
+  populateScaleSelect();
+  populateKeySelect();
+  renderProgressionPreview();
+}
+
+const genreSelect= document.getElementById('genreSelect') as HTMLSelectElement|null;
+if(genreSelect) genreSelect.addEventListener('change', ()=>{
+  chosenGenre= genreSelect.value;
+  refreshSetupSelects();
+});
+
+const scaleSelect= document.getElementById('scaleSelect') as HTMLSelectElement|null;
+if(scaleSelect) scaleSelect.addEventListener('change', ()=>{
+  chosenMode= scaleSelect.value as ScaleName;
+  populateKeySelect();
+  renderProgressionPreview();
+});
+
+const keySelectEl= document.getElementById('keySelect') as HTMLSelectElement|null;
+if(keySelectEl) keySelectEl.addEventListener('change', ()=>{
+  chosenKey= keySelectEl.value;
+});
+
+populateGenreSelect();
+refreshSetupSelects();
 
 const startButton= document.getElementById('startButton');
 if(startButton) startButton.addEventListener('click', startGame);

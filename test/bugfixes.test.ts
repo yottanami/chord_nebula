@@ -27,7 +27,7 @@ interface App {
   onMIDIMessage(event: { data: number[] }): void;
   checkChords(): void;
   updateCircles(deltaMs: number): void;
-  getChordSpecForLevel(degree: string): ChordSpec;
+  getChordSpecForLevel(degreeIndex: number): ChordSpec;
   noteOnStack: PlayedNote[];
   circles: Circle[];
   chosenKey: string;
@@ -158,8 +158,8 @@ describe("enharmonic bug: E#/B# scale degrees must produce the right playable no
     app.chosenMode = "major";
     app.selectedLevel = 4;
 
-    // C# major scale: C# D# E# F# G# A# B# -- degree iii is E#.
-    const spec = app.getChordSpecForLevel("iii");
+    // C# major scale: C# D# E# F# G# A# B# -- degree iii is index 2, E#.
+    const spec = app.getChordSpecForLevel(2);
     expect(spec.root).toBe("E#"); // correct spelling for C# major, unchanged
     expect(spec.quality).toBe("min");
     expect(spec.notes).toEqual(["F", "G#", "C"]); // the actually-playable pitches
@@ -171,8 +171,8 @@ describe("enharmonic bug: E#/B# scale degrees must produce the right playable no
     app.chosenMode = "minor";
     app.selectedLevel = 4;
 
-    // A# minor scale: A# B# C# D# E# F# G# -- degree v is E#.
-    const spec = app.getChordSpecForLevel("v");
+    // A# minor scale: A# B# C# D# E# F# G# -- degree v is index 4, E#.
+    const spec = app.getChordSpecForLevel(4);
     expect(spec.root).toBe("E#");
     expect(spec.quality).toBe("min");
     expect(spec.notes).toEqual(["F", "G#", "C"]);

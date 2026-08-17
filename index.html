@@ -38,10 +38,12 @@
       <div class="menuContainer matrix-panel matrix-panel--container">
         <h2>How to Play</h2>
         <div class="menuBody">
-          <p>Connect a MIDI keyboard (or a MIDI-capable app on your phone), then pick your key and level from the setup screen.</p>
-          <p>Notes and chords fall from the top of the play area. Play the note or chord shown &mdash; all its notes at once, on your MIDI keyboard &mdash; before it reaches the bottom.</p>
-          <p>Match it in time and it pops; let it fall past the bottom and you lose a life. Run out of lives and the game ends.</p>
-          <p>Levels 1-3 are free and cover scale notes and basic chords. Levels 4-8 add note ordering, root-in-bass voicings, seventh chords, and more &mdash; unlock them with a one-time purchase from the setup screen.</p>
+          <p>Connect a MIDI keyboard (or a MIDI-capable app on your phone), then pick your genre, scale, key and level from the setup screen.</p>
+          <p>The genre decides which progressions you get and which scales they are drawn from: pop and classical stay in major and minor, rock and blues add mixolydian, jazz and funk add dorian, EDM adds phrygian.</p>
+          <p>Notes and chords fall from the top of the play area. Play the note or chord shown (all its notes at once, on your MIDI keyboard) before it reaches the bottom.</p>
+          <p>Match it in time and it pops; let it reach the bottom and you lose a life. Run out of lives and the game ends.</p>
+          <p>Note names are shown on the orb at first and drop away once you are scoring, leaving the chord name and its scale degree. The pace picks up as your score climbs.</p>
+          <p>Levels 1-3 are free and cover scale notes and basic chords. Levels 4-8 add note ordering, root-in-bass voicings, seventh chords, and more. Unlock them with a one-time purchase from the setup screen.</p>
         </div>
         <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
       </div>
@@ -118,39 +120,32 @@
     <div id="setupScreen" class="screen">
       <div id="setupContainer" class="matrix-panel matrix-panel--container">
 	<h1>Chord Nebula</h1>
-	<p>Learn and practice piano chords and common chord progressions in both major and minor keys!</p>
+	<p>Learn and practice piano chords and the common progressions of the genre you play, in every key.</p>
 	<p>Note names are shown while you find your feet, then drop away once you are scoring, and the pace steps up as you keep going.</p>
-	<p>Select your MIDI keyboard, key, and level:</p>
+	<p>Select your MIDI keyboard, genre, scale, key, and level:</p>
 
 	<div class="formRow">
 	  <select id="midiSelect"></select>
 	</div>
 
 	<div class="formRow">
-	  <select id="keySelect">
-	    <option value="C">C</option>
-	    <option value="G">G</option>
-	    <option value="D">D</option>
-	    <option value="A">A</option>
-	    <option value="E">E</option>
-	    <option value="B">B</option>
-	    <option value="F#">F#</option>
-	    <option value="C#">C#</option>
-	    <option value="F">F</option>
-	    <option value="Bb">Bb</option>
-	    <option value="Eb">Eb</option>
-	    <option value="Ab">Ab</option>
-	    <option value="Db">Db</option>
-	    <option value="Gb">Gb</option>
-	  </select>
-
-	  <label>
-	    <input type="radio" name="mode" value="major" checked class="modeRadio"> Major
+	  <label>Genre:
+	    <!-- Options for these three are built in src/app.ts: the scales come
+	         from the chosen genre and the keys from the chosen scale, so they
+	         can't be listed statically here. -->
+	    <select id="genreSelect"></select>
 	  </label>
-	  <label>
-	    <input type="radio" name="mode" value="minor" class="modeRadio"> Minor
+
+	  <label>Scale:
+	    <select id="scaleSelect"></select>
+	  </label>
+
+	  <label>Key:
+	    <select id="keySelect"></select>
 	  </label>
 	</div>
+
+	<p id="progressionPreview" class="progressionPreview"></p>
 
 	<div id="levelRow" class="formRow">
 	  <label>Level:

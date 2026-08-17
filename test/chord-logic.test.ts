@@ -16,7 +16,7 @@ interface App {
   matchesLevel1to3(chordNotes: string[]): boolean;
   matchesLevel4(chordNotes: string[]): boolean;
   matchesLevel5(chordNotes: string[]): boolean;
-  getChordSpecForLevel(degree: string): ChordSpec;
+  getChordSpecForLevel(degreeIndex: number): ChordSpec;
   noteOnStack: PlayedNote[];
   chosenKey: string;
   chosenMode: "major" | "minor";
@@ -88,7 +88,9 @@ describe("getChordSpecForLevel", () => {
     app.chosenKey = "C";
     app.chosenMode = "major";
     app.selectedLevel = 4;
-    const spec = app.getChordSpecForLevel("I");
+    // Degrees are 0-based scale indices now, so the tonic is 0 and the
+    // dominant is 4 -- the roman numeral is generated from the scale.
+    const spec = app.getChordSpecForLevel(0);
     expect(spec.root).toBe("C");
     expect(spec.quality).toBe("maj");
     expect(spec.notes).toEqual(["C", "E", "G"]);
@@ -99,7 +101,7 @@ describe("getChordSpecForLevel", () => {
     app.chosenKey = "C";
     app.chosenMode = "major";
     app.selectedLevel = 6;
-    const spec = app.getChordSpecForLevel("V");
+    const spec = app.getChordSpecForLevel(4);
     expect(spec.root).toBe("G");
     expect(spec.quality).toBe("dom7");
     expect(spec.notes).toEqual(["G", "B", "D", "F"]);
@@ -111,7 +113,7 @@ describe("getChordSpecForLevel", () => {
     app.chosenMode = "major";
     app.selectedLevel = 4;
     // Degree V in G major is D (G major scale: G A B C D E F#).
-    const spec = app.getChordSpecForLevel("V");
+    const spec = app.getChordSpecForLevel(4);
     expect(spec.root).toBe("D");
   });
 });
