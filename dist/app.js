@@ -1114,8 +1114,10 @@ function updateCircles(deltaMs) {
     // to gameplay (TODO.org's "speed up by time" bug).
     let deltaFactor = deltaMs / REFERENCE_FRAME_MS;
     let field = playField();
-    for (let i = circles.length - 1; i >= 0; i--) {
-        let c = circles[i];
+    // Iterated over a snapshot, and removed by identity rather than by
+    // index: the last miss of a game calls endGame, which empties `circles`
+    // mid-loop, and an index-based loop then read past the end of the array.
+    for (const c of circles.slice()) {
         if (!c.destroyed) {
             c.y += c.speed * deltaFactor;
             c.element.style.top = c.y + "px";
@@ -1127,9 +1129,7 @@ function updateCircles(deltaMs) {
             // the moment it visually touches the edge -- what How to Play
             // promises, and no longer tied to the window's height.
             if (c.y + c.size >= field.height) {
-                if (c.element.parentNode)
-                    c.element.parentNode.removeChild(c.element);
-                circles.splice(i, 1);
+                removeCircle(c);
                 lives--;
                 updateLives();
                 flashMiss();
@@ -1139,11 +1139,17 @@ function updateCircles(deltaMs) {
             }
         }
         else {
-            if (c.element.parentNode)
-                c.element.parentNode.removeChild(c.element);
-            circles.splice(i, 1);
+            removeCircle(c);
         }
     }
+}
+/** Detaches an orb and drops it from the falling list. */
+function removeCircle(circle) {
+    if (circle.element.parentNode)
+        circle.element.parentNode.removeChild(circle.element);
+    let index = circles.indexOf(circle);
+    if (index > -1)
+        circles.splice(index, 1);
 }
 function updateCirclesAndSpawn(timestamp, deltaMs) {
     updateCircles(deltaMs);
@@ -1208,6 +1214,7 @@ function startGame() {
         let setupScreen = document.getElementById('setupScreen');
         let gameScreen = document.getElementById('gameScreen');
         let endScreen = document.getElementById('endScreen');
+        clearSetupError();
         if (levelSelect) {
             selectedLevel = parseInt(levelSelect.value, 10);
             if (isNaN(selectedLevel) || selectedLevel < 1 || selectedLevel > 8) {
@@ -1221,7 +1228,8 @@ function startGame() {
         // refreshUnlockUI) is only a UI nicety, not what actually stops a
         // locked level from starting.
         if (!isLevelAllowed(selectedLevel, yield isUnlocked())) {
-            alert("Level " + selectedLevel + " needs the paid unlock. Levels 1-3 are free -- see the unlock section to buy or enter a license key.");
+            showSetupError("Level " + selectedLevel + " needs the paid unlock. Levels 1-3 are free: " +
+                "use the unlock section above to buy or enter a license key.");
             return;
         }
         if (genreSel && genreSel.value)
@@ -1231,7 +1239,8 @@ function startGame() {
         if (keySel && keySel.value)
             chosenKey = keySel.value;
         if (!isValidMidiInput(midi === null || midi === void 0 ? void 0 : midi.options)) {
-            alert("Please select a valid MIDI input device");
+            showSetupError("Select a MIDI keyboard first. If the list is empty, connect one and " +
+                "allow this site to use MIDI.");
             return;
         }
         let selectedId = midi ? midi.value : "";
@@ -1281,10 +1290,16 @@ function populateMIDIInputs() {
         return;
     select.innerHTML = "";
     let inputs = [];
-    midiAccess.inputs.forEach(inp => {
-        if (isUsableMidiInputName(inp.name || ""))
-            inputs.push(inp);
-    });
+    // midiAccess is null until the browser grants access, which can sit
+    // pending on a permission prompt for as long as the player takes to
+    // answer it. This runs once before that too, so the dropdown says what's
+    // happening instead of being an empty box.
+    if (midiAccess) {
+        midiAccess.inputs.forEach(inp => {
+            if (isUsableMidiInputName(inp.name || ""))
+                inputs.push(inp);
+        });
+    }
     if (inputs.length === 0) {
         let option = document.createElement('option');
         option.value = NO_MIDI_OPTION_VALUE;
@@ -1522,6 +1537,24 @@ function refreshSetupSelects() {
     renderProgressionPreview();
 }
 /**
+ * Says why Start didn't start anything, on the setup screen itself.
+ *
+ * These used to be alert() calls, which block the page until dismissed,
+ * come with no styling, and are throttled or suppressed outright in some
+ * browsers and embedded contexts -- so the one thing they had to do, tell
+ * the player what went wrong, is the thing they couldn't be relied on for.
+ */
+function showSetupError(message) {
+    let holder = document.getElementById('setupError');
+    if (!holder)
+        return;
+    holder.innerText = message;
+    holder.style.display = message ? '' : 'none';
+}
+function clearSetupError() {
+    showSetupError("");
+}
+/**
  * Explains an empty device list and takes Start away, since there is
  * nothing to start. Web MIDI support is not universal: Chrome, Edge, Opera
  * and Brave have it, Firefox needs its Web MIDI site-permission add-on, and
@@ -1631,6 +1664,9 @@ if (restartButton)
         clearCircles();
         showScreen('setupScreen');
     });
+// Something in the box from the first paint, rather than an empty select
+// while the permission prompt is still open.
+populateMIDIInputs();
 if (navigator.requestMIDIAccess) {
     navigator.requestMIDIAccess()
         .then((access) => {

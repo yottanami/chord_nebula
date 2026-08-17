@@ -7,11 +7,28 @@ import { loadAppPureLogic } from "./support/loadApp";
 // fix; these tests cover both halves of it (tracked orbs and strays) and
 // that it leaves the decorative canvas alone.
 
+class FakeClassList {
+  private classes = new Set<string>();
+  add(name: string) {
+    this.classes.add(name);
+  }
+  remove(name: string) {
+    this.classes.delete(name);
+  }
+  contains(name: string) {
+    return this.classes.has(name);
+  }
+}
+
 class FakeElement {
   className = "";
   style: Record<string, string> = {};
+  classList = new FakeClassList();
   parentNode: FakeElement | null = null;
   children: FakeElement[] = [];
+  clientWidth = 1000;
+  clientHeight = 800;
+  offsetWidth = 0;
   constructor(className = "") {
     this.className = className;
   }
@@ -129,6 +146,57 @@ describe("clearCircles", () => {
 
     expect(() => app.clearCircles()).not.toThrow();
     expect(app.circles).toHaveLength(0);
+  });
+});
+
+describe("the frame that ends the game", () => {
+  it("clears the field without tripping over its own cleanup", () => {
+    const gameArea = new FakeElement("gameArea");
+    gameArea.clientWidth = 1000;
+    gameArea.clientHeight = 800;
+    const app = loadApp(gameArea) as unknown as App & {
+      updateCircles(deltaMs: number): void;
+      lives: number;
+      window: { innerWidth: number; innerHeight: number };
+      AudioContext: unknown;
+      setTimeout: unknown;
+    };
+    app.window = { innerWidth: 1000, innerHeight: 800 };
+    app.AudioContext = class {
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          frequency: { setValueAtTime() {} },
+          connect() {
+            return this;
+          },
+          start() {},
+          stop() {},
+        };
+      }
+      createGain() {
+        return {
+          gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+          connect() {
+            return this;
+          },
+        };
+      }
+    };
+    app.setTimeout = () => 0;
+    app.gameRunning = true;
+    app.lives = 1;
+
+    // Three orbs all crossing the miss line on the same frame: the first
+    // takes the last life and ends the game, which empties `circles` while
+    // this very loop is still walking it.
+    for (let i = 0; i < 3; i++) attachOrb(app, gameArea).y = 700;
+
+    expect(() => app.updateCircles(1000 / 60)).not.toThrow();
+    expect(app.circles).toHaveLength(0);
+    expect(gameArea.children).toHaveLength(0);
+    expect(app.gameRunning).toBe(false);
   });
 });
 

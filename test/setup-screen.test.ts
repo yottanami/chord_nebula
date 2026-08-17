@@ -49,6 +49,11 @@ interface App {
   refreshSetupSelects(): void;
   renderContactEmail(): void;
   showMidiNotice(message: string): void;
+  showSetupError(message: string): void;
+  clearSetupError(): void;
+  startGame(): Promise<void>;
+  gameRunning: boolean;
+  localStorage: { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void };
   getScalesForGenre(id: string): ScaleName[];
   chosenGenre: string;
   chosenMode: ScaleName;
@@ -67,9 +72,12 @@ function loadApp() {
     keySelect: new FakeSelect(),
     progressionPreview: new FakeSpan(),
     midiUnsupported: new FakeSpan(),
+    setupError: new FakeSpan(),
+    levelSelect: new FakeSelect(),
     startButton: new FakeSpan(),
     contactEmail: new FakeSpan(),
   };
+  (elements.levelSelect as FakeSelect).value = "1"; // a free level
   app.document = {
     getElementById: (id: string) => elements[id] ?? null,
     createElement: (tag: string) => (tag === "a" ? new FakeLink() : { value: "", innerText: "" }),
@@ -81,6 +89,7 @@ function loadApp() {
     key: elements.keySelect as FakeSelect,
     preview: elements.progressionPreview as FakeSpan,
     notice: elements.midiUnsupported as FakeSpan,
+    setupError: elements.setupError as FakeSpan,
     start: elements.startButton as FakeSpan & { disabled?: boolean },
     contact: elements.contactEmail as FakeSpan,
   };
@@ -213,6 +222,32 @@ describe("renderContactEmail", () => {
     app.renderContactEmail();
 
     expect(contact.children).toHaveLength(0);
+  });
+});
+
+describe("showSetupError", () => {
+  it("puts the reason on the setup screen and takes it back down", () => {
+    const { app, setupError } = loadApp();
+
+    app.showSetupError("pick a keyboard");
+    expect(setupError.innerText).toBe("pick a keyboard");
+    expect(setupError.style.display).toBe("");
+
+    app.clearSetupError();
+    expect(setupError.innerText).toBe("");
+    expect(setupError.style.display).toBe("none");
+  });
+});
+
+describe("startGame without a keyboard", () => {
+  it("explains itself on the page instead of starting", async () => {
+    const { app, setupError } = loadApp();
+    app.localStorage = { getItem: () => null, setItem: () => {} };
+
+    await app.startGame();
+
+    expect(app.gameRunning).toBe(false);
+    expect(setupError.innerText).toContain("Select a MIDI keyboard");
   });
 });
 

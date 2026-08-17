@@ -96,6 +96,19 @@ describe("populateMIDIInputs", () => {
     expect(app.isValidMidiInput(select.options)).toBe(false);
   });
 
+  it("says something before MIDI access has been granted", () => {
+    const { app, select } = loadApp([]);
+    // Access can sit pending on a permission prompt for as long as the
+    // player takes to answer it; an empty box explains nothing.
+    (app as unknown as { midiAccess: null }).midiAccess = null;
+
+    app.populateMIDIInputs();
+
+    expect(select.options).toHaveLength(1);
+    expect(select.options[0].innerText).toBe("No MIDI keyboard found");
+    expect(app.isValidMidiInput(select.options)).toBe(false);
+  });
+
   it("replaces the previous list rather than appending to it", () => {
     const { app, select } = loadApp([{ id: "yamaha", name: "Yamaha P-45" }]);
 
