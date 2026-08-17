@@ -730,6 +730,29 @@ function measureOrbSize(element) {
     return element.offsetWidth || ORB_SIZE_PX;
 }
 /**
+ * Size of the play area. Orbs are positioned inside #gameArea, which is
+ * 70vw wide and centred, so measuring the window instead put spawns past
+ * its right edge where overflow:hidden cut them in half -- and put the
+ * miss line below the visible bottom, so a missed orb sat invisible for a
+ * second or two while still counting as playable. Falls back to the window
+ * only when there's no play area to measure.
+ */
+function playField() {
+    let gameArea = document.getElementById('gameArea');
+    return {
+        width: gameArea && gameArea.clientWidth ? gameArea.clientWidth : window.innerWidth,
+        height: gameArea && gameArea.clientHeight ? gameArea.clientHeight : window.innerHeight
+    };
+}
+/**
+ * Left offset for an orb sitting at `fraction` along the horizontal track.
+ * Clamped at both ends, so the whole orb is always inside the field even if
+ * the field is narrower than one orb.
+ */
+function spawnLeftPx(fieldWidth, orbSize, fraction) {
+    return Math.max(0, (fieldWidth - orbSize) * Math.min(Math.max(fraction, 0), 1));
+}
+/**
  * Places a freshly built orb in the play area and registers it as falling.
  * Both generators funnel through here so spawn geometry lives in one place.
  */
@@ -738,7 +761,8 @@ function spawnCircle(element, name, notes) {
     gameArea.appendChild(element);
     // Measured only after appending -- offsetWidth is 0 for a detached node.
     let size = measureOrbSize(element);
-    element.style.left = (Math.random() * (window.innerWidth - size)) + "px";
+    let xFraction = Math.random();
+    element.style.left = spawnLeftPx(playField().width, size, xFraction) + "px";
     element.style.top = (-size) + "px";
     circleSpawnCount++;
     let speedScale = 1 + circleSpawnCount * 0.01;
@@ -749,7 +773,8 @@ function spawnCircle(element, name, notes) {
         y: -size,
         speed: speedScale,
         destroyed: false,
-        size
+        size,
+        xFraction
     });
 }
 function generateNoteCircle() {
@@ -845,12 +870,20 @@ function updateCircles(deltaMs) {
     // previously made circles speed up or slow down for reasons unrelated
     // to gameplay (TODO.org's "speed up by time" bug).
     let deltaFactor = deltaMs / REFERENCE_FRAME_MS;
+    let field = playField();
     for (let i = circles.length - 1; i >= 0; i--) {
         let c = circles[i];
         if (!c.destroyed) {
             c.y += c.speed * deltaFactor;
             c.element.style.top = c.y + "px";
-            if (c.y > (window.innerHeight - 50)) {
+            // Recomputed every frame rather than only at spawn: resizing the
+            // window mid-game shrinks the play area under orbs already falling,
+            // which used to leave them clipped by its right edge.
+            c.element.style.left = spawnLeftPx(field.width, c.size, c.xFraction) + "px";
+            // Missed once the orb's *bottom* reaches the field's bottom, which is
+            // the moment it visually touches the edge -- what How to Play
+            // promises, and no longer tied to the window's height.
+            if (c.y + c.size >= field.height) {
                 if (c.element.parentNode)
                     c.element.parentNode.removeChild(c.element);
                 circles.splice(i, 1);

@@ -13,6 +13,8 @@ interface Circle {
   y: number;
   speed: number;
   destroyed: boolean;
+  size: number;
+  xFraction: number;
 }
 
 interface ChordSpec {
@@ -33,7 +35,7 @@ interface App {
   selectedLevel: number;
   score: number;
   document: { getElementById: () => null };
-  window: { innerHeight: number };
+  window: { innerWidth: number; innerHeight: number };
   AudioContext: new () => unknown;
   setTimeout: (fn: () => void, ms: number) => number;
 }
@@ -90,6 +92,8 @@ describe("note-continuity bug: checkChords must also run on note-off", () => {
       y: 0,
       speed: 1,
       destroyed: false,
+      size: 150,
+      xFraction: 0,
     };
     app.circles = [circle];
 
@@ -124,6 +128,8 @@ describe("note-continuity bug: checkChords must also run on note-off", () => {
       y: 0,
       speed: 1,
       destroyed: false,
+      size: 150,
+      xFraction: 0,
     };
     app.circles = [circle];
 
@@ -182,12 +188,14 @@ describe("timing bug: circle movement must be proportional to real elapsed time"
       y: 0,
       speed,
       destroyed: false,
+      size: 150,
+      xFraction: 0,
     };
   }
 
   it("moves a full `speed` step at the 60fps reference frame time", () => {
     const app = loadApp();
-    app.window = { innerHeight: 10000 };
+    app.window = { innerWidth: 10000, innerHeight: 10000 };
     const circle = fakeCircle(2);
     app.circles = [circle];
 
@@ -198,7 +206,7 @@ describe("timing bug: circle movement must be proportional to real elapsed time"
 
   it("moves proportionally less when less real time has passed (e.g. a faster display)", () => {
     const app = loadApp();
-    app.window = { innerHeight: 10000 };
+    app.window = { innerWidth: 10000, innerHeight: 10000 };
     const circle = fakeCircle(2);
     app.circles = [circle];
 
@@ -209,7 +217,7 @@ describe("timing bug: circle movement must be proportional to real elapsed time"
 
   it("moves proportionally more when more real time has passed (e.g. a slow/dropped frame)", () => {
     const app = loadApp();
-    app.window = { innerHeight: 10000 };
+    app.window = { innerWidth: 10000, innerHeight: 10000 };
     const circle = fakeCircle(2);
     app.circles = [circle];
 
