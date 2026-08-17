@@ -305,17 +305,15 @@ h1 {
   z-index: 2;
   width: var(--orb-size);
   height: var(--orb-size);
-  /* images/chord-orb.png is a 1024px square whose lit disc occupies only
-     the middle ~60%, the rest being glow falloff. At `cover` that put the
-     visible disc at ~90px inside a 150px box, so the note line was drawn
-     across bare background either side of the orb. Scaling to 165% crops
-     the falloff (the drop-shadow below re-creates it) and lands the disc
-     on the element's own edges, which is what the text is laid out
-     against. The radial layer above it is a scrim that keeps the label
-     readable over the orb's bright lower half. */
+  /* 300x300 sprite (2x for retina) cropped tight to the disc, so it fills
+     the box edge-to-edge and text laid out across the box stays on the
+     orb rather than spilling onto the play area either side of it (see
+     art-source/README.md for the crop). The radial layer above it is a
+     scrim that keeps the label readable over the orb's bright lower
+     half. */
   background:
     radial-gradient(circle, rgba(0, 12, 6, 0.74) 0%, rgba(0, 12, 6, 0.44) 55%, rgba(0, 12, 6, 0) 76%),
-    url('images/chord-orb.png') center / 165% 165% no-repeat;
+    url('images/chord-orb.png') center/cover no-repeat;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
