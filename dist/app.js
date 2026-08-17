@@ -719,25 +719,45 @@ function createBassForLevel5(baseChord) {
     let bassNote = noteNames[bassMidi % 12] || root;
     return bassNote;
 }
+/** Diameter of a falling orb, in px. Mirrors --orb-size in style.css. */
+const ORB_SIZE_PX = 150;
+/**
+ * The orb's real diameter, so this file never has to know about style.css's
+ * small-screen override of --orb-size. Falls back to ORB_SIZE_PX when the
+ * element isn't laid out (no stylesheet, or a test's fake element).
+ */
+function measureOrbSize(element) {
+    return element.offsetWidth || ORB_SIZE_PX;
+}
+/**
+ * Places a freshly built orb in the play area and registers it as falling.
+ * Both generators funnel through here so spawn geometry lives in one place.
+ */
+function spawnCircle(element, name, notes) {
+    let gameArea = document.getElementById('gameArea');
+    gameArea.appendChild(element);
+    // Measured only after appending -- offsetWidth is 0 for a detached node.
+    let size = measureOrbSize(element);
+    element.style.left = (Math.random() * (window.innerWidth - size)) + "px";
+    element.style.top = (-size) + "px";
+    circleSpawnCount++;
+    let speedScale = 1 + circleSpawnCount * 0.01;
+    circles.push({
+        element,
+        noteOrChordName: name,
+        noteOrChordNotes: notes,
+        y: -size,
+        speed: speedScale,
+        destroyed: false,
+        size
+    });
+}
 function generateNoteCircle() {
     let note = getNextSingleNote();
     let element = document.createElement('div');
     element.className = "chordCircle";
     element.innerHTML = note;
-    let gameArea = document.getElementById('gameArea');
-    element.style.left = (Math.random() * (window.innerWidth - 100)) + "px";
-    element.style.top = "-100px";
-    gameArea.appendChild(element);
-    circleSpawnCount++;
-    let speedScale = 1 + circleSpawnCount * 0.01;
-    circles.push({
-        element,
-        noteOrChordName: note,
-        noteOrChordNotes: [note],
-        y: -100,
-        speed: speedScale,
-        destroyed: false
-    });
+    spawnCircle(element, note, [note]);
 }
 function generateChordCircle() {
     let chordDegree = getNextChordName();
@@ -780,20 +800,7 @@ function generateChordCircle() {
         htmlContent += `<div class="ccNotes">${displayChord.join("-")}</div>`;
     }
     element.innerHTML = htmlContent;
-    let gameArea = document.getElementById('gameArea');
-    element.style.left = (Math.random() * (window.innerWidth - 100)) + "px";
-    element.style.top = "-100px";
-    gameArea.appendChild(element);
-    circleSpawnCount++;
-    let speedScale = 1 + circleSpawnCount * 0.01;
-    circles.push({
-        element,
-        noteOrChordName: chordLabel,
-        noteOrChordNotes: finalChord,
-        y: -100,
-        speed: speedScale,
-        destroyed: false
-    });
+    spawnCircle(element, chordLabel, finalChord);
 }
 // First-pass difficulty ramp for Auto mode -- deliberately simple, tunable
 // constants (hide names, then functions, then step up chord complexity).

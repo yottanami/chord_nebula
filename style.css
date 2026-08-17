@@ -21,6 +21,12 @@
      Courier New both are not. Falls back to the same stack
      matrix-panel.css uses. */
   --font-body: 'IBM Plex Mono', 'Courier New', ui-monospace, monospace;
+  /* Diameter of a falling orb. Single source of truth: src/app.ts mirrors
+     this as ORB_SIZE_PX (spawn position, off-screen start, miss line), and
+     measures the element to pick up the media-query override below, so the
+     two can't drift. Sized for readability: three stacked lines of pixel
+     type at 110px left the note list microscopic. */
+  --orb-size: 150px;
 }
 
 body {
@@ -279,8 +285,8 @@ h1 {
 .chordCircle {
   position: absolute;
   z-index: 2;
-  width: 110px;
-  height: 110px;
+  width: var(--orb-size);
+  height: var(--orb-size);
   /* 220x220 sprite (2x for retina) cropped from the delivered emblem so
      the disc fills the box edge-to-edge; the radial layer above it is a
      scrim that keeps the label readable over the orb's bright lower half. */
@@ -294,9 +300,9 @@ h1 {
   justify-content: center;
   /* Base size is for the bare single-note circles (generateNoteCircle
      writes a plain text node, no wrapper div). */
-  font-size: 15px;
+  font-size: 20px;
   text-align: center;
-  padding: 5px;
+  padding: 8px;
   box-sizing: border-box;
   color: var(--ink);
   line-height: 1.5;
@@ -304,21 +310,26 @@ h1 {
   filter: drop-shadow(0 0 10px rgba(0, 255, 102, 0.45));
 }
 
-/* Chord circles stack up to three lines inside a 110px disc, so each gets
-   its own size -- Press Start 2P is near-monospace at ~1em per glyph, and
-   a shared size overflowed the art on the longest line. */
+/* Chord circles stack up to three lines inside the disc, so each gets its
+   own size -- Press Start 2P is near-monospace at ~1em per glyph, and a
+   shared size overflowed the art on the longest line. */
 .chordCircle .ccFunction {
-  font-size: 10px;
+  font-size: 13px;
   opacity: 0.8;
 }
 
 .chordCircle .ccLabel {
-  font-size: 12px;
+  font-size: 16px;
 }
 
+/* The longest string the orb ever holds: five notes with accidentals on
+   level 5 ("D#-G-A#-D-F"). Allowed to wrap rather than shrink further,
+   since below ~10px this pixel font stops being legible at all. */
 .chordCircle .ccNotes {
-  font-size: 8px;
+  font-size: 10px;
   opacity: 0.92;
+  max-width: 100%;
+  word-break: break-word;
 }
 
 /* Short-lived "pop" shown where a circle was matched -- a separate
@@ -327,8 +338,8 @@ h1 {
 .matchPop {
   position: absolute;
   z-index: 3;
-  width: 110px;
-  height: 110px;
+  width: var(--orb-size);
+  height: var(--orb-size);
   border-radius: 50%;
   border: 3px solid var(--accent);
   box-shadow: 0 0 24px rgba(0, 255, 102, 0.85);
@@ -404,6 +415,27 @@ h1 {
 #unlockForm p {
   font-size: 13px;
   line-height: 1.6;
+}
+
+/* A 150px orb takes a third of the play area on a phone-sized screen.
+   src/app.ts measures the element rather than assuming ORB_SIZE_PX, so
+   spawn bounds and the miss line follow this automatically. */
+@media (max-width: 640px) {
+  :root {
+    --orb-size: 110px;
+  }
+
+  .chordCircle {
+    font-size: 15px;
+  }
+
+  .chordCircle .ccFunction {
+    font-size: 10px;
+  }
+
+  .chordCircle .ccLabel {
+    font-size: 12px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
