@@ -1100,15 +1100,31 @@ async function startGame():Promise<void> {
   requestAnimationFrame(gameLoop);
 }
 
+/**
+ * Whether a MIDI port is something you can actually play. ALSA on Linux
+ * always exposes a "Midi Through Port-0" loopback, and it shows up in the
+ * device list next to real keyboards while carrying no input of its own --
+ * confusing, and picking it silently produces a game that never responds.
+ */
+function isUsableMidiInputName(name:string):boolean {
+  return !/midi\s*through/i.test(name);
+}
+
+/** Marks the "nothing to select" option, which isValidMidiInput rejects. */
+const NO_MIDI_OPTION_VALUE = "";
+
 function populateMIDIInputs():void {
   let select= document.getElementById('midiSelect') as HTMLSelectElement|null;
   if(!select) return;
   select.innerHTML= "";
   let inputs:MIDIInput[]=[];
-  midiAccess!.inputs.forEach(inp=> inputs.push(inp));
+  midiAccess!.inputs.forEach(inp=>{
+    if(isUsableMidiInputName(inp.name|| "")) inputs.push(inp);
+  });
   if(inputs.length===0){
     let option= document.createElement('option');
-    option.innerText= "No MIDI devices found";
+    option.value= NO_MIDI_OPTION_VALUE;
+    option.innerText= "No MIDI keyboard found";
     select.appendChild(option);
   } else {
     inputs.forEach(input=>{
@@ -1120,12 +1136,17 @@ function populateMIDIInputs():void {
   }
 }
 
+/**
+ * True when the dropdown holds at least one real device. Every real option
+ * carries the MIDIInput's id as its value; the "No MIDI keyboard found"
+ * placeholder deliberately has none, which is what distinguishes them.
+ */
 function isValidMidiInput(midiInputs:HTMLOptionsCollection| undefined):boolean {
   if(!midiInputs|| midiInputs.length===0) return false;
-  if(midiInputs.length===1 && (midiInputs[0] as HTMLOptionElement).innerText==="Midi Through Port-0"){
-    return false;
+  for(let i=0;i<midiInputs.length;i++){
+    if((midiInputs[i] as HTMLOptionElement).value!== NO_MIDI_OPTION_VALUE) return true;
   }
-  return true;
+  return false;
 }
 
 // --- Paid-level unlock ---
@@ -1351,6 +1372,9 @@ if(navigator.requestMIDIAccess){
     .then((access: MIDIAccess)=>{
       midiAccess= access;
       populateMIDIInputs();
+      // Keyboards get plugged in after the page is already open more often
+      // than not; without this the list stayed stale until a reload.
+      access.onstatechange= ()=> populateMIDIInputs();
     })
     .catch((err:any)=>{
       console.error("Failed to access MIDI devices:", err);
