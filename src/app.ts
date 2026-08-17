@@ -367,15 +367,13 @@ function matchesLevel4(chordNotes:string[]):boolean {
 function matchesLevel5(chordNotes:string[]):boolean {
   if(chordNotes.length!== noteOnStack.length) return false;
   let playedAsc= [...noteOnStack].sort((a,b)=> a.midiNumber- b.midiNumber);
+  // chordNotes is listed bass-first, so comparing it against the played
+  // notes in pitch order is what enforces "root in the bass": the lowest
+  // note played has to be the one the orb lists first.
   for(let i=0; i<chordNotes.length; i++){
     let cNote= toSharpName(chordNotes[i]);
     let pNote= toSharpName(midiNoteToName(playedAsc[i].midiNumber));
     if(cNote!== pNote) return false;
-  }
-  if(playedAsc.length>=2){
-    let bassMidi= playedAsc[0].midiNumber;
-    let secondMidi= playedAsc[1].midiNumber;
-    if(bassMidi> secondMidi) return false;
   }
   return true;
 }
@@ -1550,25 +1548,6 @@ function showScreen(id: string): void {
   if(target) target.classList.add('active');
 }
 
-// --- Pure logic ends here; DOM/browser wiring runs immediately below ---
-// (test/support/loadApp.ts slices the file at this exact comment to load
-// the chord/game logic above it in Node without a DOM, so tests can call
-// functions like matchesLevel4/getChordSpecForLevel directly. Nothing at
-// or above this line may execute top-level code that touches document/
-// window/navigator, or the test loader breaks.)
-
-const menuButtonTargets: {[buttonId:string]:string} = {
-  menuStartButton: 'setupScreen',
-  menuHowToPlayButton: 'howToPlayScreen',
-  menuAboutButton: 'aboutScreen',
-  menuSubscribeButton: 'subscribeScreen'
-};
-for(let buttonId in menuButtonTargets){
-  let button= document.getElementById(buttonId);
-  let targetId= menuButtonTargets[buttonId];
-  if(button) button.addEventListener('click', ()=> showScreen(targetId));
-}
-
 /**
  * Builds the About screen's contact link at runtime from the two data
  * attributes on #contactEmail. The complete address is never present in
@@ -1587,31 +1566,6 @@ function renderContactEmail():void {
   link.textContent= address;
   holder.appendChild(link);
 }
-renderContactEmail();
-
-document.querySelectorAll('.backButton').forEach(button=>{
-  let targetId= (button as HTMLElement).dataset.backTo|| 'mainMenuScreen';
-  button.addEventListener('click', ()=> showScreen(targetId));
-});
-
-// Arrow-key navigation between the buttons of whichever nav is showing --
-// Tab/Enter/Space already work via native <button> focus semantics, this
-// just adds the arcade-y up/down cycling on top of that (mouse/touch
-// works regardless).
-document.querySelectorAll('.screenNav').forEach(nav=>{
-  let navButtons= Array.from(nav.querySelectorAll('button')) as HTMLButtonElement[];
-  nav.addEventListener('keydown', (e)=>{
-    let key= (e as KeyboardEvent).key;
-    let idx= navButtons.indexOf(document.activeElement as HTMLButtonElement);
-    if(key==='ArrowDown'){
-      e.preventDefault();
-      navButtons[(idx+1+navButtons.length)% navButtons.length]?.focus();
-    } else if(key==='ArrowUp'){
-      e.preventDefault();
-      navButtons[(idx-1+navButtons.length)% navButtons.length]?.focus();
-    }
-  });
-});
 
 // --- Setup screen: genre -> scale -> key ---------------------------
 // Each select narrows the next one: a genre offers only the scales its
@@ -1675,6 +1629,68 @@ function refreshSetupSelects():void {
   renderProgressionPreview();
 }
 
+/**
+ * Explains an empty device list and takes Start away, since there is
+ * nothing to start. Web MIDI support is not universal: Chrome, Edge, Opera
+ * and Brave have it, Firefox needs its Web MIDI site-permission add-on, and
+ * Safari has none. Before this, those browsers showed an empty dropdown and
+ * left the player to guess why.
+ */
+function showMidiNotice(message:string):void {
+  let notice= document.getElementById('midiUnsupported');
+  if(notice){
+    notice.innerText= message;
+    notice.style.display= '';
+  }
+  let start= document.getElementById('startButton') as HTMLButtonElement|null;
+  if(start) start.disabled= true;
+}
+
+// --- Pure logic ends here; DOM/browser wiring runs immediately below ---
+// (test/support/loadApp.ts slices the file at this exact comment to load
+// the chord/game logic above it in Node without a DOM, so tests can call
+// functions like matchesLevel4/getChordSpecForLevel directly. Nothing at
+// or above this line may execute top-level code that touches document/
+// window/navigator, or the test loader breaks.)
+
+const menuButtonTargets: {[buttonId:string]:string} = {
+  menuStartButton: 'setupScreen',
+  menuHowToPlayButton: 'howToPlayScreen',
+  menuAboutButton: 'aboutScreen',
+  menuSubscribeButton: 'subscribeScreen'
+};
+for(let buttonId in menuButtonTargets){
+  let button= document.getElementById(buttonId);
+  let targetId= menuButtonTargets[buttonId];
+  if(button) button.addEventListener('click', ()=> showScreen(targetId));
+}
+
+renderContactEmail();
+
+document.querySelectorAll('.backButton').forEach(button=>{
+  let targetId= (button as HTMLElement).dataset.backTo|| 'mainMenuScreen';
+  button.addEventListener('click', ()=> showScreen(targetId));
+});
+
+// Arrow-key navigation between the buttons of whichever nav is showing --
+// Tab/Enter/Space already work via native <button> focus semantics, this
+// just adds the arcade-y up/down cycling on top of that (mouse/touch
+// works regardless).
+document.querySelectorAll('.screenNav').forEach(nav=>{
+  let navButtons= Array.from(nav.querySelectorAll('button')) as HTMLButtonElement[];
+  nav.addEventListener('keydown', (e)=>{
+    let key= (e as KeyboardEvent).key;
+    let idx= navButtons.indexOf(document.activeElement as HTMLButtonElement);
+    if(key==='ArrowDown'){
+      e.preventDefault();
+      navButtons[(idx+1+navButtons.length)% navButtons.length]?.focus();
+    } else if(key==='ArrowUp'){
+      e.preventDefault();
+      navButtons[(idx-1+navButtons.length)% navButtons.length]?.focus();
+    }
+  });
+});
+
 const genreSelect= document.getElementById('genreSelect') as HTMLSelectElement|null;
 if(genreSelect) genreSelect.addEventListener('change', ()=>{
   chosenGenre= genreSelect.value;
@@ -1724,23 +1740,6 @@ if(restartButton) restartButton.addEventListener('click', ()=>{
   clearCircles();
   showScreen('setupScreen');
 });
-
-/**
- * Explains an empty device list and takes Start away, since there is
- * nothing to start. Web MIDI support is not universal: Chrome, Edge, Opera
- * and Brave have it, Firefox needs its Web MIDI site-permission add-on, and
- * Safari has none. Before this, those browsers showed an empty dropdown and
- * left the player to guess why.
- */
-function showMidiNotice(message:string):void {
-  let notice= document.getElementById('midiUnsupported');
-  if(notice){
-    notice.innerText= message;
-    notice.style.display= '';
-  }
-  let start= document.getElementById('startButton') as HTMLButtonElement|null;
-  if(start) start.disabled= true;
-}
 
 if(navigator.requestMIDIAccess){
   navigator.requestMIDIAccess()
