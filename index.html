@@ -128,6 +128,10 @@
 	  <select id="midiSelect"></select>
 	</div>
 
+	<!-- Filled in by src/app.ts when Web MIDI is missing or refused: the
+	     device list alone can't explain why it is empty. -->
+	<p id="midiUnsupported" class="error" style="display:none;"></p>
+
 	<div class="formRow">
 	  <label>Genre:
 	    <!-- Options for these three are built in src/app.ts: the scales come

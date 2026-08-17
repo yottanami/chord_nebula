@@ -202,8 +202,33 @@ function spellNoteInScale(note:string, scale:string[]):string {
   return note;
 }
 
+/**
+ * Web Audio's constructor. Safari below 14.1 only exposes the prefixed
+ * one, and browsers without Web Audio at all get null rather than a
+ * ReferenceError.
+ */
+function audioContextConstructor():{ new(): AudioContext }|null {
+  if(typeof AudioContext!=='undefined') return AudioContext;
+  if(typeof window!=='undefined'){
+    let prefixed= (window as any).webkitAudioContext;
+    if(prefixed) return prefixed;
+  }
+  return null;
+}
+
 function ensureAudioContext():void {
-  if(!audioContext) audioContext=new AudioContext();
+  if(!audioContext){
+    let ctor= audioContextConstructor();
+    if(!ctor) return;
+    audioContext= new ctor();
+  }
+  // Autoplay policy: a context first created outside a user gesture comes
+  // back suspended and stays completely silent until something resumes it.
+  // Playing a MIDI note doesn't count as a gesture in Chrome, so without
+  // this the game could run with no sound at all.
+  if(audioContext.state==='suspended' && typeof audioContext.resume==='function'){
+    audioContext.resume();
+  }
 }
 
 function midiNoteToName(noteNumber:number): string {
@@ -225,7 +250,8 @@ function normalizeChordNote(n:string):string {
 
 function playNoteSound(noteNumber:number,velocity:number):void {
   ensureAudioContext();
-  let ctx= audioContext!;
+  let ctx= audioContext;
+  if(!ctx) return;
   let freq= freqFromMidiNote(noteNumber);
   let osc= ctx.createOscillator();
   osc.type='sine';
@@ -404,7 +430,8 @@ function flashMiss():void {
 /** Short, deliberately unpleasant buzz for a miss -- distinct from playChordSound's chime. */
 function playMissSound():void {
   ensureAudioContext();
-  let ctx= audioContext!;
+  let ctx= audioContext;
+  if(!ctx) return;
   let startTime= ctx.currentTime;
   let osc= ctx.createOscillator();
   osc.type= 'sawtooth';
@@ -506,10 +533,11 @@ function scheduleEnginePulses():void {
 function startEngineDrone():void {
   if(engineTimer!==null) return;
   // No-op under the test sandbox / any environment without Web Audio.
-  if(typeof AudioContext==='undefined') return;
+  if(!audioContextConstructor()) return;
   ensureAudioContext();
+  if(!audioContext) return;
   engineStep= 0;
-  engineNextStepTime= audioContext!.currentTime+ 0.05;
+  engineNextStepTime= audioContext.currentTime+ 0.05;
   scheduleEnginePulses();
   engineTimer= setInterval(scheduleEnginePulses, 120);
 }
@@ -546,7 +574,8 @@ function gameLoop(timestamp:number):void {
 
 function playChordSound(chord:string[]):void {
   ensureAudioContext();
-  let ctx= audioContext!;
+  let ctx= audioContext;
+  if(!ctx) return;
   let startTime= ctx.currentTime;
   for(const n of chord){
     let freq= noteNameToFreq(n);
@@ -1696,6 +1725,23 @@ if(restartButton) restartButton.addEventListener('click', ()=>{
   showScreen('setupScreen');
 });
 
+/**
+ * Explains an empty device list and takes Start away, since there is
+ * nothing to start. Web MIDI support is not universal: Chrome, Edge, Opera
+ * and Brave have it, Firefox needs its Web MIDI site-permission add-on, and
+ * Safari has none. Before this, those browsers showed an empty dropdown and
+ * left the player to guess why.
+ */
+function showMidiNotice(message:string):void {
+  let notice= document.getElementById('midiUnsupported');
+  if(notice){
+    notice.innerText= message;
+    notice.style.display= '';
+  }
+  let start= document.getElementById('startButton') as HTMLButtonElement|null;
+  if(start) start.disabled= true;
+}
+
 if(navigator.requestMIDIAccess){
   navigator.requestMIDIAccess()
     .then((access: MIDIAccess)=>{
@@ -1707,8 +1753,17 @@ if(navigator.requestMIDIAccess){
     })
     .catch((err:any)=>{
       console.error("Failed to access MIDI devices:", err);
-      alert("MIDI access was denied. Please allow MIDI access to use Chord Nebula.");
+      showMidiNotice(
+        "MIDI access was blocked, so your keyboard can't be read. Allow MIDI "+
+        "for this site in your browser's settings, then reload."
+      );
     });
+} else {
+  showMidiNotice(
+    "This browser has no Web MIDI support, so it can't read your keyboard. "+
+    "Chrome, Edge, Opera and Brave work; Firefox needs its Web MIDI site "+
+    "permission add-on, and Safari has no support yet."
+  );
 }
 
 // --- Decorative play-area canvas overlay ---------------------------

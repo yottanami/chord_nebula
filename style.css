@@ -147,6 +147,16 @@ a:hover {
   transform: translateY(0);
 }
 
+/* Start is disabled when the browser has no Web MIDI to offer (see
+   showMidiNotice in src/app.ts), so it has to look unavailable. */
+#startButton:disabled, #startButton:disabled:hover {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+  border-color: rgba(0, 255, 102, 0.25);
+  box-shadow: none;
+}
+
 /* Both sit inline next to a text input, so they take a compact size
    rather than the full arcade-button padding above. */
 #unlockButton, #mc-embedded-subscribe {
@@ -279,6 +289,10 @@ h1 {
    appended to #gameArea after it, always paint on top. */
 #gameFx {
   position: absolute;
+  /* Long-hand as well as `inset`: Safari only learned the shorthand in
+     14.1, and this canvas has to be pinned in older ones too. */
+  top: 0;
+  left: 0;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -333,6 +347,7 @@ h1 {
   font-size: 10px;
   opacity: 0.92;
   max-width: 100%;
+  overflow-wrap: break-word;
   word-break: break-word;
 }
 
