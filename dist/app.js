@@ -1218,8 +1218,7 @@ const menuButtonTargets = {
     menuStartButton: 'modeSelectScreen',
     menuHowToPlayButton: 'howToPlayScreen',
     menuAboutButton: 'aboutScreen',
-    menuSubscribeButton: 'subscribeScreen',
-    menuOptionsButton: 'optionsScreen'
+    menuSubscribeButton: 'subscribeScreen'
 };
 for (let buttonId in menuButtonTargets) {
     let button = document.getElementById(buttonId);
@@ -1227,6 +1226,27 @@ for (let buttonId in menuButtonTargets) {
     if (button)
         button.addEventListener('click', () => showScreen(targetId));
 }
+/**
+ * Builds the About screen's contact link at runtime from the two data
+ * attributes on #contactEmail. The complete address is never present in
+ * index.html, and the "@" is assembled from its char code so it isn't a
+ * literal in dist/app.js either -- address harvesters read both files.
+ */
+function renderContactEmail() {
+    let holder = document.getElementById('contactEmail');
+    if (!holder)
+        return;
+    let user = holder.dataset.user || "";
+    let domain = holder.dataset.domain || "";
+    if (!user || !domain)
+        return;
+    let address = user + String.fromCharCode(64) + domain;
+    let link = document.createElement('a');
+    link.href = "mailto:" + address;
+    link.textContent = address;
+    holder.appendChild(link);
+}
+renderContactEmail();
 document.querySelectorAll('.backButton').forEach(button => {
     let targetId = button.dataset.backTo || 'mainMenuScreen';
     button.addEventListener('click', () => showScreen(targetId));

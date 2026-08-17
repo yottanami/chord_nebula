@@ -30,7 +30,6 @@
           <button class="menuItem" id="menuHowToPlayButton">How to Play</button>
           <button class="menuItem" id="menuAboutButton">About</button>
           <button class="menuItem" id="menuSubscribeButton">Subscribe</button>
-          <button class="menuItem" id="menuOptionsButton">Options</button>
         </nav>
       </div>
     </div>
@@ -68,15 +67,17 @@
         <h2>About</h2>
         <div class="menuBody">
           <p>
-            Thank you for checking out this game. The idea behind this game is to help you learn piano chords and master common chord progressions across various keys using a MIDI device.
-            Whether you're a beginner piano or keyboard player looking to understand how to connect chords or someone who enjoys playing different pieces, composing, or improvising, Chord Nebula is here to assist you.
+            Chord Nebula teaches the keyboard in the order the music itself is built. You start with the notes of a key, one at a time, until the shape of the scale is under your fingers.
           </p>
           <p>
-            Please note that Chord Nebula is still under development, and you might encounter some issues. Your recent support and feedback have given me the motivation and enthusiasm to continue expanding this software, and I will be working on improvements soon.
+            Then come the chords built on those notes: how each one is stacked, what it is called, and which degree of the key it belongs to.
           </p>
           <p>
-            You can access the project source through the link below. If you encounter any problems or have suggestions, please let me know. Additionally, starring the repository on GitHub will encourage me to keep developing this project.<br/>
-            <a href="https://github.com/yottanami/chord_nebula">https://github.com/yottanami/chord_nebula</a>
+            The part that matters most comes last. Chords are rarely played alone, so the game drills the common progressions those chords make in real music, across keys, scales, and genres, until moving between them stops being a calculation and becomes something you hear.
+          </p>
+          <p>
+            Found a bug, have a suggestion, or just want to say hi? Get in touch:
+            <span id="contactEmail" data-user="yottanami" data-domain="gmail.com"></span>
           </p>
         </div>
         <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
@@ -124,16 +125,6 @@
             }(jQuery));
             var $mcj = jQuery.noConflict(true);
           </script>
-        </div>
-        <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
-      </div>
-    </div>
-
-    <div id="optionsScreen" class="screen">
-      <div class="menuContainer matrix-panel matrix-panel--container">
-        <h2>Options</h2>
-        <div class="menuBody">
-          <p>Nothing to configure here yet &mdash; check back in a future update.</p>
         </div>
         <button class="menuItem backButton" data-back-to="mainMenuScreen">Back</button>
       </div>
