@@ -45,7 +45,6 @@ interface App {
   populateGenreSelect(): void;
   populateScaleSelect(): void;
   populateKeySelect(): void;
-  renderProgressionPreview(): void;
   refreshSetupSelects(): void;
   renderContactEmail(): void;
   showMidiNotice(message: string): void;
@@ -70,7 +69,6 @@ function loadApp() {
     genreSelect: new FakeSelect(),
     scaleSelect: new FakeSelect(),
     keySelect: new FakeSelect(),
-    progressionPreview: new FakeSpan(),
     midiUnsupported: new FakeSpan(),
     setupError: new FakeSpan(),
     levelSelect: new FakeSelect(),
@@ -87,7 +85,6 @@ function loadApp() {
     genre: elements.genreSelect as FakeSelect,
     scale: elements.scaleSelect as FakeSelect,
     key: elements.keySelect as FakeSelect,
-    preview: elements.progressionPreview as FakeSpan,
     notice: elements.midiUnsupported as FakeSpan,
     setupError: elements.setupError as FakeSpan,
     start: elements.startButton as FakeSpan & { disabled?: boolean },
@@ -169,36 +166,15 @@ describe("populateKeySelect", () => {
   });
 });
 
-describe("renderProgressionPreview", () => {
-  it("lists what the chosen genre and scale will deal out", () => {
-    const { app, preview } = loadApp();
-    app.chosenGenre = "pop";
-    app.chosenMode = "major";
-    app.renderProgressionPreview();
-    expect(preview.innerText).toContain("I-V-vi-IV");
-    expect(preview.innerText).not.toContain("i-bVI-bIII-bVII"); // a minor one
-  });
-
-  it("follows the scale, not just the genre", () => {
-    const { app, preview } = loadApp();
-    app.chosenGenre = "pop";
-    app.chosenMode = "minor";
-    app.renderProgressionPreview();
-    expect(preview.innerText).toContain("i-bVI-bIII-bVII");
-    expect(preview.innerText).not.toContain("I-V-vi-IV");
-  });
-});
-
 describe("refreshSetupSelects", () => {
   it("leaves genre, scale and key on a combination that has progressions", () => {
-    const { app, scale, key, preview } = loadApp();
+    const { app, scale, key } = loadApp();
     for (const genreId of ["pop", "rock", "jazz", "blues", "classical", "folk", "funk", "edm"]) {
       app.chosenGenre = genreId;
       app.refreshSetupSelects();
       expect(app.getScalesForGenre(genreId)).toContain(app.chosenMode);
       expect(scale.values).toContain(app.chosenMode);
       expect(key.values).toContain(app.chosenKey);
-      expect(preview.innerText.length).toBeGreaterThan("Progressions: ".length);
     }
   });
 });

@@ -117,12 +117,17 @@
       </div>
     </div>
 
+    <!-- Setup is a 3-step wizard: MIDI, then genre/scale, then key/level/
+         unlock. Each step is its own top-level .screen, switched with the
+         same showScreen()/data-back-to idiom every other screen uses --
+         Next buttons are the only new wiring (src/app.ts), Back buttons
+         reuse the existing .backButton/data-back-to mechanism as-is. -->
     <div id="setupScreen" class="screen">
-      <div id="setupContainer" class="matrix-panel matrix-panel--container">
+      <div id="setupContainer" class="setupContainer matrix-panel matrix-panel--container">
 	<h1>Chord Nebula</h1>
 	<p>Learn and practice piano chords and the common progressions of the genre you play, in every key.</p>
 	<p>Note names are shown while you find your feet, then drop away once you are scoring, and the pace steps up as you keep going.</p>
-	<p>Select your MIDI keyboard, genre, scale, key, and level:</p>
+	<p>To play this you need a MIDI keyboard (or a MIDI-capable app). Connect it to your computer, select it from the list below, and press Continue.</p>
 
 	<div class="formRow">
 	  <select id="midiSelect"></select>
@@ -131,6 +136,16 @@
 	<!-- Filled in by src/app.ts when Web MIDI is missing or refused: the
 	     device list alone can't explain why it is empty. -->
 	<p id="midiUnsupported" class="error" style="display:none;"></p>
+
+	<button id="setupStep1NextButton" class="menuItem">Continue</button>
+	<button class="menuItem backButton" data-back-to="mainMenuScreen">Back to Menu</button>
+      </div>
+    </div>
+
+    <div id="setupStep2Screen" class="screen">
+      <div id="setupStep2Container" class="setupContainer matrix-panel matrix-panel--container">
+	<h1>Chord Nebula</h1>
+	<p>Select your favorite genre and the scale that goes with it.</p>
 
 	<div class="formRow">
 	  <label>Genre:
@@ -143,13 +158,23 @@
 	  <label>Scale:
 	    <select id="scaleSelect"></select>
 	  </label>
+	</div>
 
+	<button id="setupStep2NextButton" class="menuItem">Continue</button>
+	<button class="menuItem backButton" data-back-to="setupScreen">Back</button>
+      </div>
+    </div>
+
+    <div id="setupStep3Screen" class="screen">
+      <div id="setupStep3Container" class="setupContainer matrix-panel matrix-panel--container">
+	<h1>Chord Nebula</h1>
+	<p>Pick the key you want to play in, then your level. Levels 1-3 are free; levels 4-8 unlock with a one-time purchase below.</p>
+
+	<div class="formRow">
 	  <label>Key:
 	    <select id="keySelect"></select>
 	  </label>
 	</div>
-
-	<p id="progressionPreview" class="progressionPreview"></p>
 
 	<div id="levelRow" class="formRow">
 	  <label>Level:
@@ -184,6 +209,7 @@
 	<p id="setupError" class="error" style="display:none;"></p>
 
 	<button id="startButton">Start Game</button>
+	<button class="menuItem backButton" data-back-to="setupStep2Screen">Back</button>
 	<button id="setupBackButton" class="menuItem backButton" data-back-to="mainMenuScreen">Back to Menu</button>
       </div>
     </div>
