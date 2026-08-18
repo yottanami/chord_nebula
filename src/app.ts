@@ -1636,18 +1636,9 @@ function populateKeySelect():void {
   select.value= chosenKey;
 }
 
-/** Lists what the current genre and scale will actually throw at you. */
-function renderProgressionPreview():void {
-  let preview= document.getElementById('progressionPreview');
-  if(!preview) return;
-  let labels= getProgressionsFor(chosenGenre, chosenMode).map(p=> p.label);
-  preview.innerText= "Progressions: "+ labels.join("  |  ");
-}
-
 function refreshSetupSelects():void {
   populateScaleSelect();
   populateKeySelect();
-  renderProgressionPreview();
 }
 
 /**
@@ -1697,7 +1688,9 @@ const menuButtonTargets: {[buttonId:string]:string} = {
   menuStartButton: 'setupScreen',
   menuHowToPlayButton: 'howToPlayScreen',
   menuAboutButton: 'aboutScreen',
-  menuSubscribeButton: 'subscribeScreen'
+  menuSubscribeButton: 'subscribeScreen',
+  setupStep1NextButton: 'setupStep2Screen',
+  setupStep2NextButton: 'setupStep3Screen'
 };
 for(let buttonId in menuButtonTargets){
   let button= document.getElementById(buttonId);
@@ -1741,7 +1734,6 @@ const scaleSelect= document.getElementById('scaleSelect') as HTMLSelectElement|n
 if(scaleSelect) scaleSelect.addEventListener('change', ()=>{
   chosenMode= scaleSelect.value as ScaleName;
   populateKeySelect();
-  renderProgressionPreview();
 });
 
 const keySelectEl= document.getElementById('keySelect') as HTMLSelectElement|null;

@@ -82,7 +82,7 @@ a:hover {
    adapts that component to this app: matrix-panel--container is a
    single-child flex row by default and 900px wide, neither of which
    suits stacked menu content. */
-#setupContainer, .menuContainer {
+.setupContainer, .menuContainer {
   flex-direction: column;
   width: min(92vw, 560px);
   margin: 80px auto 40px;
@@ -91,7 +91,7 @@ a:hover {
   color: var(--ink);
 }
 
-#setupContainer {
+.setupContainer {
   width: min(92vw, 620px);
 }
 
@@ -195,7 +195,7 @@ h1 {
   letter-spacing: 1px;
 }
 
-#setupContainer > p {
+.setupContainer > p {
   font-size: 14px;
   line-height: 1.75;
   opacity: 0.85;
@@ -242,18 +242,6 @@ h1 {
 #levelSelect option {
   color: var(--ink);
   background: #04140b;
-}
-
-/* The progressions the chosen genre and scale will actually deal out.
-   Quieter than the surrounding labels: it's a reference list, not a
-   control, so it must not compete with the selects above it. */
-.progressionPreview {
-  margin: 4px auto 18px;
-  max-width: 46ch;
-  font-size: 11px;
-  line-height: 1.8;
-  opacity: 0.7;
-  color: var(--accent-soft);
 }
 
 .error, #unlockError {

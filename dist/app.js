@@ -1523,18 +1523,9 @@ function populateKeySelect() {
         addOption(select, key, key);
     select.value = chosenKey;
 }
-/** Lists what the current genre and scale will actually throw at you. */
-function renderProgressionPreview() {
-    let preview = document.getElementById('progressionPreview');
-    if (!preview)
-        return;
-    let labels = getProgressionsFor(chosenGenre, chosenMode).map(p => p.label);
-    preview.innerText = "Progressions: " + labels.join("  |  ");
-}
 function refreshSetupSelects() {
     populateScaleSelect();
     populateKeySelect();
-    renderProgressionPreview();
 }
 /**
  * Says why Start didn't start anything, on the setup screen itself.
@@ -1581,7 +1572,9 @@ const menuButtonTargets = {
     menuStartButton: 'setupScreen',
     menuHowToPlayButton: 'howToPlayScreen',
     menuAboutButton: 'aboutScreen',
-    menuSubscribeButton: 'subscribeScreen'
+    menuSubscribeButton: 'subscribeScreen',
+    setupStep1NextButton: 'setupStep2Screen',
+    setupStep2NextButton: 'setupStep3Screen'
 };
 for (let buttonId in menuButtonTargets) {
     let button = document.getElementById(buttonId);
@@ -1625,7 +1618,6 @@ if (scaleSelect)
     scaleSelect.addEventListener('change', () => {
         chosenMode = scaleSelect.value;
         populateKeySelect();
-        renderProgressionPreview();
     });
 const keySelectEl = document.getElementById('keySelect');
 if (keySelectEl)
