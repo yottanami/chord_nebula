@@ -200,10 +200,14 @@
 
 	<div id="unlockForm">
 	  <p>Levels 1-3 are free. Levels 4-8 need a one-time unlock:
-	    <a id="purchaseLink" href="#" target="_blank" rel="noopener">Buy on Gumroad</a>
+	    <a id="purchaseLink" href="#" target="_blank" rel="noopener" class="inert">Buy on Gumroad</a>
 	  </p>
+	  <label id="termsAgreeLabel">
+	    <input type="checkbox" id="termsAgreeCheckbox"/>
+	    I've read and agree to the <button id="termsLink" class="linkButton">Terms</button>
+	  </label>
 	  <input type="text" id="licenseKeyInput" placeholder="Enter your license key"/>
-	  <button id="unlockButton">Unlock</button>
+	  <button id="unlockButton" disabled>Unlock</button>
 	  <p id="unlockError" class="error"></p>
 	</div>
 	<p id="unlockedMessage" style="display:none;">Levels 4-8 unlocked. Thanks for buying!</p>
@@ -214,6 +218,18 @@
 	<button id="startButton">Start Game</button>
 	<button class="menuItem backButton" data-back-to="setupStep2Screen">Back</button>
 	<button id="setupBackButton" class="menuItem backButton" data-back-to="mainMenuScreen">Back to Menu</button>
+      </div>
+    </div>
+
+    <div id="termsScreen" class="screen">
+      <div class="menuContainer matrix-panel matrix-panel--container">
+        <h2>Terms</h2>
+        <div class="menuBody">
+          <p>This is a small, independently-made project. I do my best to keep it working and to deliver what's described here, but I can't guarantee uninterrupted access, specific features, or that the software is free of bugs.</p>
+          <p>The one-time payment for levels 4-8 supports continued development of the project -- it is not a subscription, and doesn't entitle you to guaranteed updates or support response times.</p>
+          <p>Refunds are handled through Gumroad's own policy, not this project directly. By purchasing, you agree to these terms.</p>
+        </div>
+        <button class="menuItem backButton" data-back-to="setupStep3Screen">Back</button>
       </div>
     </div>
 

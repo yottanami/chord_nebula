@@ -67,6 +67,32 @@ a:hover {
   color: var(--accent-bright);
 }
 
+/* A button styled to read as inline text -- termsLink needs a click
+   handler (it opens #termsScreen via showScreen), not a real navigation,
+   so it can't be a plain <a href>. */
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent-soft);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.linkButton:hover, .linkButton:focus-visible {
+  color: var(--accent-bright);
+}
+
+/* Purchase entry points are inert until the terms checkbox is ticked
+   (src/app.ts). #unlockButton uses the native disabled attribute; #purchaseLink
+   is a plain external link, which has no disabled state, so it gets this
+   instead. */
+.inert {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .screen {
   display: none;
   text-align: center;
@@ -425,6 +451,12 @@ h1 {
 #unlockForm p {
   font-size: 13px;
   line-height: 1.6;
+}
+
+#termsAgreeLabel {
+  display: block;
+  font-size: 13px;
+  margin: 10px 0;
 }
 
 /* A 150px orb takes a third of the play area on a phone-sized screen.
