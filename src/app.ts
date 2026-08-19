@@ -1207,11 +1207,32 @@ const DIFFICULTY_STAGES: DifficultyStage[] = [
   { minScore: 50, showNotes: false, speed: 2.25, spawnMs: 2000 },
 ];
 
+// Past the last hand-tuned stage, the ramp keeps climbing procedurally
+// instead of going flat, so a sustained high-score session keeps getting
+// harder. spawnMs is floored so it never reaches something unreadable;
+// speed is left uncapped since a faster fall is still legible on its own.
+const LAST_STAGE= DIFFICULTY_STAGES[DIFFICULTY_STAGES.length- 1];
+const EXTRA_STAGE_SCORE_STEP= 20;
+const EXTRA_STAGE_SPEED_STEP= 0.15;
+const EXTRA_STAGE_SPAWN_MS_STEP= 100;
+const MIN_SPAWN_MS= 700;
+
 /** The highest stage the current score has reached. */
 function currentStage():DifficultyStage {
   let stage= DIFFICULTY_STAGES[0];
   for(let s of DIFFICULTY_STAGES){
     if(score>= s.minScore) stage= s;
+  }
+  if(score> LAST_STAGE.minScore){
+    let extraSteps= Math.floor((score- LAST_STAGE.minScore)/ EXTRA_STAGE_SCORE_STEP);
+    if(extraSteps> 0){
+      stage= {
+        minScore: LAST_STAGE.minScore+ extraSteps* EXTRA_STAGE_SCORE_STEP,
+        showNotes: LAST_STAGE.showNotes,
+        speed: LAST_STAGE.speed+ extraSteps* EXTRA_STAGE_SPEED_STEP,
+        spawnMs: Math.max(MIN_SPAWN_MS, LAST_STAGE.spawnMs- extraSteps* EXTRA_STAGE_SPAWN_MS_STEP),
+      };
+    }
   }
   return stage;
 }

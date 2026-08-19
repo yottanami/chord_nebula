@@ -105,10 +105,40 @@ describe("currentStage", () => {
     }
   });
 
-  it("tops out at the last stage rather than running off the end", () => {
+  it("matches the last hand-tuned stage exactly at its own threshold and below", () => {
     const app = loadApp();
+    const lastStage = app.DIFFICULTY_STAGES[app.DIFFICULTY_STAGES.length - 1];
+    app.score = lastStage.minScore;
+    expect(app.currentStage()).toEqual(lastStage);
+
+    app.score = lastStage.minScore - 1;
+    expect(app.currentStage()).not.toEqual(lastStage);
+  });
+
+  it("keeps ramping past the last hand-tuned stage instead of going flat", () => {
+    const app = loadApp();
+    const lastStage = app.DIFFICULTY_STAGES[app.DIFFICULTY_STAGES.length - 1];
+
+    app.score = lastStage.minScore + 20;
+    const beyond = app.currentStage();
+    expect(beyond.speed).toBeGreaterThan(lastStage.speed);
+    expect(beyond.spawnMs).toBeLessThan(lastStage.spawnMs);
+    expect(beyond.showNotes).toBe(false);
+
+    app.score = lastStage.minScore + 200;
+    const further = app.currentStage();
+    expect(further.speed).toBeGreaterThan(beyond.speed);
+  });
+
+  it("floors spawnMs so an extreme score never becomes unreadable", () => {
+    const app = loadApp();
+    const lastStage = app.DIFFICULTY_STAGES[app.DIFFICULTY_STAGES.length - 1];
+
     app.score = 100000;
-    expect(app.currentStage()).toEqual(app.DIFFICULTY_STAGES[app.DIFFICULTY_STAGES.length - 1]);
+    const extreme = app.currentStage();
+    expect(extreme.spawnMs).toBeGreaterThanOrEqual(700);
+    // Speed is intentionally left uncapped -- only spawnMs needs a floor.
+    expect(extreme.speed).toBeGreaterThan(lastStage.speed);
   });
 });
 
