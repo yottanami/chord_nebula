@@ -1326,9 +1326,6 @@ async function startGame():Promise<void> {
   let genreSel= document.getElementById('genreSelect') as HTMLSelectElement|null;
   let scaleSel= document.getElementById('scaleSelect') as HTMLSelectElement|null;
   let levelSelect= document.getElementById('levelSelect') as HTMLSelectElement|null;
-  let setupScreen= document.getElementById('setupScreen');
-  let gameScreen= document.getElementById('gameScreen');
-  let endScreen= document.getElementById('endScreen');
 
   clearSetupError();
 
@@ -1374,9 +1371,7 @@ async function startGame():Promise<void> {
   // Back to stage one's settings for the new run.
   showNotes= currentStage().showNotes;
 
-  if(setupScreen) setupScreen.classList.remove('active');
-  if(gameScreen) gameScreen.classList.add('active');
-  if(endScreen) endScreen.classList.remove('active');
+  showScreen('gameScreen');
 
   clearCircles();
   // Any notes still held from the previous run would otherwise count

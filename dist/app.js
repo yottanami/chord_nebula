@@ -1211,9 +1211,6 @@ function startGame() {
         let genreSel = document.getElementById('genreSelect');
         let scaleSel = document.getElementById('scaleSelect');
         let levelSelect = document.getElementById('levelSelect');
-        let setupScreen = document.getElementById('setupScreen');
-        let gameScreen = document.getElementById('gameScreen');
-        let endScreen = document.getElementById('endScreen');
         clearSetupError();
         if (levelSelect) {
             selectedLevel = parseInt(levelSelect.value, 10);
@@ -1254,12 +1251,7 @@ function startGame() {
         updateLives();
         // Back to stage one's settings for the new run.
         showNotes = currentStage().showNotes;
-        if (setupScreen)
-            setupScreen.classList.remove('active');
-        if (gameScreen)
-            gameScreen.classList.add('active');
-        if (endScreen)
-            endScreen.classList.remove('active');
+        showScreen('gameScreen');
         clearCircles();
         // Any notes still held from the previous run would otherwise count
         // towards matching the first orb of this one.
