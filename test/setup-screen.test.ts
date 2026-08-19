@@ -50,6 +50,7 @@ interface App {
   showMidiNotice(message: string): void;
   showSetupError(message: string): void;
   clearSetupError(): void;
+  showStep1Error(message: string): void;
   startGame(): Promise<void>;
   gameRunning: boolean;
   localStorage: { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void };
@@ -71,6 +72,7 @@ function loadApp() {
     keySelect: new FakeSelect(),
     midiUnsupported: new FakeSpan(),
     setupError: new FakeSpan(),
+    setupStep1Error: new FakeSpan(),
     levelSelect: new FakeSelect(),
     startButton: new FakeSpan(),
     contactEmail: new FakeSpan(),
@@ -87,6 +89,7 @@ function loadApp() {
     key: elements.keySelect as FakeSelect,
     notice: elements.midiUnsupported as FakeSpan,
     setupError: elements.setupError as FakeSpan,
+    step1Error: elements.setupStep1Error as FakeSpan,
     start: elements.startButton as FakeSpan & { disabled?: boolean },
     contact: elements.contactEmail as FakeSpan,
   };
@@ -212,6 +215,20 @@ describe("showSetupError", () => {
     app.clearSetupError();
     expect(setupError.innerText).toBe("");
     expect(setupError.style.display).toBe("none");
+  });
+});
+
+describe("showStep1Error", () => {
+  it("puts the reason on step 1 and takes it back down, same as showSetupError", () => {
+    const { app, step1Error } = loadApp();
+
+    app.showStep1Error("pick a keyboard");
+    expect(step1Error.innerText).toBe("pick a keyboard");
+    expect(step1Error.style.display).toBe("");
+
+    app.showStep1Error("");
+    expect(step1Error.innerText).toBe("");
+    expect(step1Error.style.display).toBe("none");
   });
 });
 

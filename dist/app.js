@@ -1239,8 +1239,7 @@ function startGame() {
         if (keySel && keySel.value)
             chosenKey = keySel.value;
         if (!isValidMidiInput(midi === null || midi === void 0 ? void 0 : midi.options)) {
-            showSetupError("Select a MIDI keyboard first. If the list is empty, connect one and " +
-                "allow this site to use MIDI.");
+            showSetupError(NO_MIDI_SELECTED_MESSAGE);
             return;
         }
         let selectedId = midi ? midi.value : "";
@@ -1284,6 +1283,9 @@ function isUsableMidiInputName(name) {
 }
 /** Marks the "nothing to select" option, which isValidMidiInput rejects. */
 const NO_MIDI_OPTION_VALUE = "";
+/** Shared between step 1's Continue gate and startGame()'s own MIDI check. */
+const NO_MIDI_SELECTED_MESSAGE = "Select a MIDI keyboard first. If the list is empty, connect one and " +
+    "allow this site to use MIDI.";
 function populateMIDIInputs() {
     let select = document.getElementById('midiSelect');
     if (!select)
@@ -1545,6 +1547,16 @@ function showSetupError(message) {
 function clearSetupError() {
     showSetupError("");
 }
+/** Same pattern as showSetupError, for step 1's own Continue gate (#163) --
+ *  #setupError lives inside #setupStep3Screen's DOM, so it isn't present
+ *  (or visible) on step 1 and can't be reused as-is. */
+function showStep1Error(message) {
+    let holder = document.getElementById('setupStep1Error');
+    if (!holder)
+        return;
+    holder.innerText = message;
+    holder.style.display = message ? '' : 'none';
+}
 /**
  * Explains an empty device list and takes Start away, since there is
  * nothing to start. Web MIDI support is not universal: Chrome, Edge, Opera
@@ -1573,7 +1585,6 @@ const menuButtonTargets = {
     menuHowToPlayButton: 'howToPlayScreen',
     menuAboutButton: 'aboutScreen',
     menuSubscribeButton: 'subscribeScreen',
-    setupStep1NextButton: 'setupStep2Screen',
     setupStep2NextButton: 'setupStep3Screen'
 };
 for (let buttonId in menuButtonTargets) {
@@ -1582,6 +1593,21 @@ for (let buttonId in menuButtonTargets) {
     if (button)
         button.addEventListener('click', () => showScreen(targetId));
 }
+// Unlike every other nav button, this one has to check something first --
+// there is no point sending the player on to genre/scale/key only to bounce
+// them off Start Game (step 3, several steps removed from the keyboard
+// dropdown) with the same "select a MIDI keyboard" message. See #163.
+const setupStep1NextButton = document.getElementById('setupStep1NextButton');
+if (setupStep1NextButton)
+    setupStep1NextButton.addEventListener('click', () => {
+        let midi = document.getElementById('midiSelect');
+        if (!isValidMidiInput(midi === null || midi === void 0 ? void 0 : midi.options)) {
+            showStep1Error(NO_MIDI_SELECTED_MESSAGE);
+            return;
+        }
+        showStep1Error("");
+        showScreen('setupStep2Screen');
+    });
 renderContactEmail();
 document.querySelectorAll('.backButton').forEach(button => {
     let targetId = button.dataset.backTo || 'mainMenuScreen';
