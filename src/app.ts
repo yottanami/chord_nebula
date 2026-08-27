@@ -384,6 +384,7 @@ function matchesLevel5(chordNotes:string[]):boolean {
 function updateScore():void {
   let s= document.getElementById('scoreDisplay');
   if(s) s.innerText= String(score);
+  saveProgress(score);
 }
 
 function updateLives():void {
@@ -1237,6 +1238,46 @@ function currentStage():DifficultyStage {
   return stage;
 }
 
+// The ramp is driven entirely by `score` (see currentStage above), so
+// persisting "which stage the player reached" just means persisting the
+// highest score seen and starting future runs from it -- no separate
+// stage/progress variable to keep in sync. Monotonic: a worse run than a
+// previous best never lowers the saved value.
+const AUTO_PROGRESS_STORAGE_KEY= "cn_autoProgress";
+
+/** Highest score reached across past runs, or 0 if none saved / unreadable. */
+function loadSavedProgress():number {
+  try {
+    let raw= localStorage.getItem(AUTO_PROGRESS_STORAGE_KEY);
+    if(raw=== null) return 0;
+    let n= parseInt(raw,10);
+    return isNaN(n)|| n<0 ? 0: n;
+  } catch(e){
+    // Storage disabled/unavailable (private browsing, etc.) -- same as a
+    // player who has never saved progress.
+    return 0;
+  }
+}
+
+/** Records `currentScore` as the new best, if it beats what's saved already. */
+function saveProgress(currentScore:number):void {
+  try {
+    if(currentScore> loadSavedProgress()){
+      localStorage.setItem(AUTO_PROGRESS_STORAGE_KEY, String(currentScore));
+    }
+  } catch(e){
+    // Nothing to do -- this run's progress just won't persist.
+  }
+}
+
+function resetProgress():void {
+  try {
+    localStorage.removeItem(AUTO_PROGRESS_STORAGE_KEY);
+  } catch(e){
+    // Nothing stored, or storage unavailable -- either way, already reset.
+  }
+}
+
 function generateCircleByLevel():void {
   showNotes= currentStage().showNotes;
   if(selectedLevel===1|| selectedLevel===2){
@@ -1385,11 +1426,14 @@ async function startGame():Promise<void> {
   midiInput= inputs.find(i=> i.id=== selectedId);
   if(midiInput) midiInput.onmidimessage= onMIDIMessage;
 
-  score=0;
+  // Resumes the ramp from the best score reached in a past run, if any --
+  // see loadSavedProgress. First run (or storage cleared/unavailable) has
+  // nothing saved, so this is 0 and behaves exactly as it did before.
+  score= loadSavedProgress();
   lives=MAX_LIVES;
   updateScore();
   updateLives();
-  // Back to stage one's settings for the new run.
+  // Stage matching wherever `score` (and so the ramp) landed above.
   showNotes= currentStage().showNotes;
 
   showScreen('gameScreen');
@@ -1827,6 +1871,13 @@ const restartButton= document.getElementById('restartButton');
 if(restartButton) restartButton.addEventListener('click', ()=>{
   clearCircles();
   showScreen('setupScreen');
+});
+
+const resetProgressButton= document.getElementById('resetProgressButton');
+if(resetProgressButton) resetProgressButton.addEventListener('click', ()=>{
+  if(window.confirm("Reset your saved progress? Your next game will start from stage one.")){
+    resetProgress();
+  }
 });
 
 // Something in the box from the first paint, rather than an empty select
