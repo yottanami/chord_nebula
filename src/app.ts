@@ -1717,7 +1717,8 @@ const menuButtonTargets: {[buttonId:string]:string} = {
   menuHowToPlayButton: 'howToPlayScreen',
   menuAboutButton: 'aboutScreen',
   menuSubscribeButton: 'subscribeScreen',
-  setupStep2NextButton: 'setupStep3Screen'
+  setupStep2NextButton: 'setupStep3Screen',
+  termsLink: 'termsScreen'
 };
 for(let buttonId in menuButtonTargets){
   let button= document.getElementById(buttonId);
@@ -1794,14 +1795,27 @@ refreshUnlockUI();
 const unlockButton= document.getElementById('unlockButton');
 const licenseKeyInput= document.getElementById('licenseKeyInput') as HTMLInputElement|null;
 const unlockError= document.getElementById('unlockError');
+
+// Both purchase entry points (Gumroad link, license-key unlock) stay inert
+// until the terms checkbox is ticked -- unchecked by default, see #165.
+const termsAgreeCheckbox= document.getElementById('termsAgreeCheckbox') as HTMLInputElement|null;
+const purchaseLinkEl= document.getElementById('purchaseLink');
+function refreshTermsGate():void {
+  let agreed= termsAgreeCheckbox? termsAgreeCheckbox.checked: false;
+  if(unlockButton) (unlockButton as HTMLButtonElement).disabled= !agreed;
+  if(purchaseLinkEl) purchaseLinkEl.classList.toggle('inert', !agreed);
+}
+if(termsAgreeCheckbox) termsAgreeCheckbox.addEventListener('change', refreshTermsGate);
+refreshTermsGate();
+
 if(unlockButton) unlockButton.addEventListener('click', async ()=>{
   let key= licenseKeyInput? licenseKeyInput.value: "";
   if(unlockError) unlockError.textContent= "";
   (unlockButton as HTMLButtonElement).disabled= true;
   (unlockButton as HTMLButtonElement).textContent= "Verifying...";
   let result= await unlockWithLicenseKey(key);
-  (unlockButton as HTMLButtonElement).disabled= false;
   (unlockButton as HTMLButtonElement).textContent= "Unlock";
+  refreshTermsGate();
   if(result.ok){
     await refreshUnlockUI();
   } else if(unlockError){
